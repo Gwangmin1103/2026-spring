@@ -1,0 +1,772 @@
+﻿<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>니체의 구절 검색하기</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Playfair+Display:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #f8f9fb;
+        --surface: #ffffff;
+        --ink: #1f2937;
+        --ink-soft: #6b7280;
+        --line: #e5e7eb;
+        --line-strong: #cfd4dd;
+      }
+
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background: var(--bg);
+        font-family: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+        letter-spacing: 0;
+      }
+
+      .wrap {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 48px 24px 64px;
+      }
+
+      .frame {
+        border-radius: 16px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+      }
+
+      header {
+        padding: 36px 36px 24px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .header-grid {
+        display: block;
+      }
+
+      .title { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+      .title h1 {
+        margin: 0;
+        font-size: 34px;
+        font-weight: 700;
+        font-family: "Playfair Display", "Times New Roman", serif;
+        color: #111827;
+        letter-spacing: 0.2px;
+      }
+      .title .sub { margin: 0; font-size: 14px; color: var(--ink-soft); line-height: 1.65; }
+
+      .searchbar {
+        margin-top: 22px;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 18px;
+        align-items: center;
+      }
+
+      .searchbar input {
+        width: 100%;
+        padding: 12px 2px 10px;
+        border: 0;
+        border-bottom: 1px solid var(--line-strong);
+        outline: none;
+        background: transparent;
+        color: var(--ink);
+        font-size: 15px;
+      }
+
+      .searchbar input:focus {
+        border-bottom-color: #111827;
+      }
+
+      .pill {
+        padding: 8px 0;
+        border-radius: 999px;
+        border: 0;
+        background: transparent;
+        color: var(--ink-soft);
+        font-size: 13px;
+        white-space: nowrap;
+        user-select: none;
+      }
+
+      .search-mode {
+        margin-top: 14px;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .search-mode label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12.5px;
+        color: var(--ink-soft);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 6px 10px;
+        cursor: pointer;
+        background: #fff;
+      }
+
+      .search-mode input {
+        margin: 0;
+        accent-color: #111827;
+      }
+
+      main { padding: 28px 36px 36px; }
+
+      .status {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 12px;
+        padding: 10px 8px 14px;
+        color: var(--ink-soft);
+        font-size: 13px;
+      }
+
+      .status .left { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+      .status strong { color: #111827; font-weight: 600; }
+
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 18px;
+      }
+
+      .card {
+        grid-column: span 12;
+        border-radius: 14px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        overflow: hidden;
+      }
+
+      .card button {
+        width: 100%;
+        text-align: left;
+        padding: 22px 22px;
+        background: transparent;
+        border: 0;
+        color: inherit;
+        cursor: pointer;
+        font: inherit;
+      }
+
+      .card button:focus-visible { outline: 2px solid #111827; outline-offset: -2px; }
+
+      .card-top {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 12px;
+        align-items: start;
+      }
+
+      .headword {
+        margin: 0 0 8px;
+        font-size: 23px;
+        font-weight: 600;
+        font-family: "Playfair Display", "Times New Roman", serif;
+        color: #111827;
+      }
+
+      .gloss {
+        margin: 0;
+        color: var(--ink-soft);
+        line-height: 1.62;
+        font-size: 14.5px;
+        white-space: pre-wrap;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .tag {
+        margin-top: 2px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: #f9fafb;
+        color: var(--ink-soft);
+        font-size: 12px;
+        white-space: nowrap;
+      }
+
+      .tag .dot { width: 6px; height: 6px; border-radius: 999px; background: #9ca3af; }
+
+      .divider { height: 1px; background: var(--line); }
+
+      .quote {
+        margin: 0;
+        padding: 14px 14px;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: #fafafa;
+        line-height: 1.75;
+        color: #374151;
+        position: relative;
+      }
+
+      .quote::before, .quote::after {
+        position: absolute;
+        color: #d1d5db;
+        font-weight: 600;
+        font-size: 20px;
+      }
+
+      .quote::before { content: "“"; top: 6px; left: 10px; }
+      .quote::after { content: "”"; bottom: 2px; right: 10px; }
+
+      .hl {
+        background: #fff3cd;
+        border-radius: 3px;
+        padding: 0 1px;
+      }
+
+      .list-view[hidden] { display: none; }
+
+      .detail-view {
+        display: none;
+        animation: fadeIn 180ms ease-out;
+      }
+
+      .detail-view[data-open="true"] { display: block; }
+
+      .back-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: #374151;
+        border-radius: 999px;
+        padding: 8px 12px;
+        font-size: 13px;
+        cursor: pointer;
+      }
+
+      .back-btn:focus-visible {
+        outline: 2px solid #111827;
+        outline-offset: 2px;
+      }
+
+      .detail-article {
+        margin-top: 18px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        overflow: hidden;
+        background: #fff;
+      }
+
+      .detail-section {
+        padding: 26px 28px;
+      }
+
+      .detail-section + .detail-section {
+        border-top: 1px solid #eef0f4;
+      }
+
+      .detail-label {
+        margin: 0 0 10px;
+        color: #9ca3af;
+        font-size: 12px;
+        letter-spacing: 0.04em;
+      }
+
+      .detail-headword {
+        margin: 0;
+        font-size: 42px;
+        line-height: 1.2;
+        font-weight: 600;
+        font-family: "Playfair Display", "Times New Roman", serif;
+        color: #111827;
+      }
+
+      .detail-body {
+        margin: 0;
+        white-space: pre-wrap;
+        line-height: 1.9;
+        font-size: 17px;
+        color: #374151;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(4px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      .explain {
+        margin: 0;
+        padding: 14px 14px;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: #ffffff;
+        line-height: 1.75;
+        color: #4b5563;
+      }
+
+      .hint {
+        padding: 18px 10px;
+        text-align: center;
+        color: var(--ink-soft);
+        border-radius: 10px;
+        border: 1px dashed var(--line-strong);
+        background: #fcfcfc;
+      }
+
+      .footer-note {
+        margin-top: 14px;
+        padding: 0 8px;
+        color: #9ca3af;
+        font-size: 12px;
+        line-height: 1.55;
+      }
+
+      @media (min-width: 740px) {
+        .cards { gap: 20px; }
+        .card { grid-column: span 6; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .detail-view { animation: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="frame">
+        <header>
+          <div class="header-grid">
+            <div class="title">
+              <h1>니체의 구절 검색하기</h1>
+              <p class="sub">CSV 지식 베이스에서 단어를 찾아 관련 카드와 원전 표현/해설을 펼쳐봅니다.</p>
+            </div>
+          </div>
+
+          <div class="searchbar">
+            <input
+              id="q"
+              type="search"
+              inputmode="search"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="예: 양치기, 도덕, 힘, 허무…"
+              aria-label="니체의 구절 검색"
+            />
+            <div id="count" class="pill" aria-live="polite">불러오는 중…</div>
+          </div>
+          <div class="search-mode" role="radiogroup" aria-label="검색 범위">
+            <label>
+              <input type="radio" name="searchMode" value="headword" checked />
+              <span>표제어만</span>
+            </label>
+            <label>
+              <input type="radio" name="searchMode" value="all" />
+              <span>전체 검색</span>
+            </label>
+          </div>
+        </header>
+
+        <main>
+          <section id="listView" class="list-view">
+            <div class="status">
+              <div class="left">
+                <span>지식 베이스</span>
+                <strong id="kbName">`nietzsche_data_m.csv`</strong>
+              </div>
+              <div class="right">
+                <span id="meta"></span>
+              </div>
+            </div>
+
+            <div id="cards" class="cards" aria-live="polite"></div>
+
+            <div class="footer-note">
+              <div>- 파일을 더블클릭으로 열어도 되지만, 브라우저 보안 정책에 따라 CSV 로딩이 막히면 로컬 서버로 열어주세요.</div>
+              <div>- 예: Windows PowerShell에서 현재 폴더에서 <code>npx --yes http-server -p 8000</code> 실행 후 <code>http://127.0.0.1:8000</code></div>
+            </div>
+          </section>
+
+          <section id="detailView" class="detail-view" data-open="false">
+            <button id="backToList" class="back-btn" type="button">← 목록으로 돌아가기</button>
+            <article class="detail-article">
+              <section class="detail-section">
+                <p class="detail-label">표제어</p>
+                <h2 id="detailHeadword" class="detail-headword">-</h2>
+              </section>
+              <section class="detail-section">
+                <p class="detail-label">뜻풀이</p>
+                <p id="detailMeaning" class="detail-body">-</p>
+              </section>
+              <section class="detail-section">
+                <p class="detail-label">원전 표현</p>
+                <p id="detailSource" class="detail-body">-</p>
+              </section>
+              <section class="detail-section">
+                <p class="detail-label">해설</p>
+                <p id="detailCommentary" class="detail-body">-</p>
+              </section>
+            </article>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script>
+      const CSV_PATH = "nietzsche_data_m.csv";
+
+      // quoted fields + escaped quotes + quoted newlines 지원
+      function parseCSV(text) {
+        const rows = [];
+        let row = [];
+        let field = "";
+        let inQuotes = false;
+
+        text = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+
+        for (let i = 0; i < text.length; i++) {
+          const ch = text[i];
+
+          if (inQuotes) {
+            if (ch === '"') {
+              const next = text[i + 1];
+              if (next === '"') {
+                field += '"';
+                i++;
+              } else {
+                inQuotes = false;
+              }
+            } else {
+              field += ch;
+            }
+            continue;
+          }
+
+          if (ch === '"') {
+            inQuotes = true;
+            continue;
+          }
+
+          if (ch === ",") {
+            row.push(field);
+            field = "";
+            continue;
+          }
+
+          if (ch === "\n") {
+            row.push(field);
+            field = "";
+            rows.push(row);
+            row = [];
+            continue;
+          }
+
+          field += ch;
+        }
+
+        row.push(field);
+        rows.push(row);
+        return rows;
+      }
+
+      function clean(s) {
+        if (s == null) return "";
+        return String(s).replace(/\uFEFF/g, "").trim();
+      }
+
+      function normalizeText(s) {
+        return clean(s)
+          .replace(/<\/?br\s*\/?>/gi, "\n")
+          .replace(/[ \t]+\n/g, "\n")
+          .replace(/\n[ \t]+/g, "\n")
+          .trim();
+      }
+
+      function excerpt(s, n = 90) {
+        const t = clean(s).replace(/\s+/g, " ");
+        if (t.length <= n) return t;
+        return t.slice(0, n - 1) + "…";
+      }
+
+      function buildIndexByLabel(labelRow) {
+        const idx = new Map();
+        for (let i = 0; i < labelRow.length; i++) {
+          const key = clean(labelRow[i]);
+          if (!key) continue;
+          if (!idx.has(key)) idx.set(key, i);
+        }
+        return idx;
+      }
+
+      function formatMultiline(s) {
+        return clean(s).split("\n").map((line) => line.trimEnd()).join("\n").trim();
+      }
+
+      function escapeRegExp(s) {
+        return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      }
+
+      function setHighlightedText(el, text, query) {
+        const source = text == null ? "" : String(text);
+        const q = clean(query);
+        el.textContent = "";
+
+        if (!q) {
+          el.textContent = source;
+          return;
+        }
+
+        const re = new RegExp(escapeRegExp(q), "gi");
+        let last = 0;
+        let m;
+
+        while ((m = re.exec(source)) !== null) {
+          if (m.index > last) {
+            el.appendChild(document.createTextNode(source.slice(last, m.index)));
+          }
+          const mark = document.createElement("mark");
+          mark.className = "hl";
+          mark.textContent = m[0];
+          el.appendChild(mark);
+          last = m.index + m[0].length;
+          if (m[0].length === 0) re.lastIndex++;
+        }
+
+        if (last < source.length) {
+          el.appendChild(document.createTextNode(source.slice(last)));
+        }
+      }
+
+      function setDetailContent(item, query) {
+        const headwordEl = document.getElementById("detailHeadword");
+        const meaningEl = document.getElementById("detailMeaning");
+        const sourceEl = document.getElementById("detailSource");
+        const commentaryEl = document.getElementById("detailCommentary");
+
+        setHighlightedText(headwordEl, item.headword || "-", query);
+        setHighlightedText(meaningEl, item.meaning || "-", query);
+        setHighlightedText(sourceEl, formatMultiline(item.sourceText) || "-", query);
+        setHighlightedText(commentaryEl, formatMultiline(item.commentary) || "-", query);
+      }
+
+      function openDetailView(item, query) {
+        const listView = document.getElementById("listView");
+        const detailView = document.getElementById("detailView");
+        listView.hidden = true;
+        setDetailContent(item, query);
+        detailView.dataset.open = "true";
+        window.scrollTo({ top: 0, behavior: "auto" });
+      }
+
+      function closeDetailView() {
+        const listView = document.getElementById("listView");
+        const detailView = document.getElementById("detailView");
+        detailView.dataset.open = "false";
+        listView.hidden = false;
+      }
+
+      function renderCards(items, query) {
+        const container = document.getElementById("cards");
+        container.innerHTML = "";
+
+        if (!items.length) {
+          const d = document.createElement("div");
+          d.className = "hint";
+          d.textContent = query ? "검색 결과가 없습니다. 다른 단어로 시도해보세요." : "검색어를 입력하면 관련 카드가 나타납니다.";
+          container.appendChild(d);
+          return;
+        }
+
+        for (const item of items) {
+          const card = document.createElement("article");
+          card.className = "card";
+
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.setAttribute("aria-label", `${item.headword || "항목"} 상세 보기`);
+
+          const top = document.createElement("div");
+          top.className = "card-top";
+
+          const left = document.createElement("div");
+          const h = document.createElement("h3");
+          h.className = "headword";
+          setHighlightedText(h, item.headword || "—", query);
+
+          const g = document.createElement("p");
+          g.className = "gloss";
+          setHighlightedText(g, item.meaning ? item.meaning : excerpt(item.sourceText || item.commentary || "", 120), query);
+
+          left.appendChild(h);
+          left.appendChild(g);
+
+          const right = document.createElement("div");
+          const tag = document.createElement("div");
+          tag.className = "tag";
+          tag.innerHTML = `<span class="dot"></span><span>${item.sourceText ? "원전/해설 펼치기" : "해설 펼치기"}</span>`;
+          right.appendChild(tag);
+
+          top.appendChild(left);
+          top.appendChild(right);
+          btn.appendChild(top);
+
+          btn.addEventListener("click", () => {
+            openDetailView(item, query);
+          });
+
+          card.appendChild(btn);
+          container.appendChild(card);
+        }
+      }
+
+      function getMatchWeight(item, q, mode) {
+        const query = clean(q).toLowerCase();
+        if (!query) return 1;
+
+        const headword = clean(item.headword).toLowerCase();
+        const source = clean(item.sourceText).toLowerCase();
+        const commentary = clean(item.commentary).toLowerCase();
+
+        const headwordExact = headword === query;
+        const headwordContains = headword.includes(query);
+        const sourceContains = source.includes(query);
+        const commentaryContains = commentary.includes(query);
+
+        if (mode === "headword") {
+          if (!headwordContains) return 0;
+          return headwordExact ? 300 : 250;
+        }
+
+        if (headwordExact) return 300;
+        if (headwordContains) return 250;
+        if (sourceContains) return 180;
+        if (commentaryContains) return 120;
+        return 0;
+      }
+
+      function filterItems(items, query, mode) {
+        const q = clean(query);
+        if (!q) return items.slice(0, 60);
+
+        const ranked = [];
+        for (const it of items) {
+          const weight = getMatchWeight(it, q, mode);
+          if (weight > 0) {
+            ranked.push({ item: it, weight });
+          }
+        }
+
+        ranked.sort((a, b) => b.weight - a.weight);
+        return ranked.slice(0, 120).map((x) => x.item);
+      }
+
+      async function loadCSV() {
+        const countEl = document.getElementById("count");
+        const metaEl = document.getElementById("meta");
+        countEl.textContent = "불러오는 중…";
+
+        let buf;
+        try {
+          const res = await fetch(CSV_PATH, { cache: "no-store" });
+          if (!res.ok) throw new Error(`CSV 로딩 실패: ${res.status} ${res.statusText}`);
+          buf = await res.arrayBuffer();
+        } catch (e) {
+          countEl.textContent = "로딩 실패";
+          document.getElementById("cards").innerHTML =
+            `<div class="hint">CSV를 불러오지 못했습니다. 파일이 <code>${CSV_PATH}</code>로 같은 폴더에 있는지 확인하고, 필요하면 로컬 서버로 열어주세요.</div>`;
+          metaEl.textContent = "";
+          throw e;
+        }
+
+        // UTF-8 (BOM 포함) 안전 디코딩
+        const text = new TextDecoder("utf-8", { fatal: false }).decode(buf);
+        const rows = parseCSV(text);
+
+        // 2번째 행(라벨 행)에서 표제어/뜻풀이/원전 표현/해설 인덱스를 찾아 매핑
+        const labelRow = rows[1] || [];
+        const labelIndex = buildIndexByLabel(labelRow);
+
+        const iHeadword = labelIndex.get("표제어");
+        const iMeaning = labelIndex.get("뜻풀이");
+        const iSource = labelIndex.get("원전 표현");
+        const iCommentary = labelIndex.get("해설");
+
+        const missing = [];
+        if (iHeadword == null) missing.push("표제어");
+        if (iMeaning == null) missing.push("뜻풀이");
+        if (iSource == null) missing.push("원전 표현");
+        if (iCommentary == null) missing.push("해설");
+
+        if (missing.length) {
+          countEl.textContent = "매핑 실패";
+          document.getElementById("cards").innerHTML =
+            `<div class="hint">필수 컬럼 라벨을 찾지 못했습니다: <strong>${missing.join(", ")}</strong><br />CSV 2번째 행(라벨 행)을 확인해주세요.</div>`;
+          metaEl.textContent = "";
+          return [];
+        }
+
+        const items = [];
+        for (let r = 2; r < rows.length; r++) {
+          const row = rows[r];
+          if (!row || !row.length) continue;
+
+          const headword = normalizeText(row[iHeadword]);
+          const meaning = normalizeText(row[iMeaning]);
+          const sourceText = normalizeText(row[iSource]);
+          const commentary = normalizeText(row[iCommentary]);
+
+          if (!headword && !meaning && !sourceText && !commentary) continue;
+          items.push({ headword, meaning, sourceText, commentary });
+        }
+
+        countEl.textContent = `총 ${items.length.toLocaleString()}개`;
+        metaEl.textContent = "라벨 행 기반 자동 매핑";
+        return items;
+      }
+
+      (async function init() {
+        const q = document.getElementById("q");
+        const countEl = document.getElementById("count");
+        const modeEls = document.querySelectorAll('input[name="searchMode"]');
+        const backBtn = document.getElementById("backToList");
+
+        let items = [];
+        try {
+          items = await loadCSV();
+        } catch {
+          return;
+        }
+
+        const render = () => {
+          const query = q.value;
+          const selectedMode = document.querySelector('input[name="searchMode"]:checked')?.value || "headword";
+          const filtered = filterItems(items, query, selectedMode);
+          countEl.textContent = clean(query) ? `${filtered.length.toLocaleString()}개 표시` : `총 ${items.length.toLocaleString()}개`;
+          renderCards(filtered, clean(query));
+        };
+
+        q.addEventListener("input", render, { passive: true });
+        q.addEventListener("search", render, { passive: true });
+        for (const modeEl of modeEls) {
+          modeEl.addEventListener("change", render, { passive: true });
+        }
+        backBtn.addEventListener("click", closeDetailView, { passive: true });
+        render();
+      })();
+    </script>
+  </body>
+</html>
