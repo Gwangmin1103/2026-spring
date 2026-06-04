@@ -1,0 +1,57 @@
+남호성 교수님 음성학 5.8.금.
+
+매번 발화되는 다른 소리는 phone(음성) – physical 
+머리 속에서 프로세스되고 같은 것으로 인식되는 것은 phoneme(음소) – cognitive 차원
+이들 다루는 학문 Phonology
+
+음성학 3가지분야 – articulatory, acoustic, auditory 
+Articulatory: from mouth – producing speech
+Acoustic: through air, how to transmit speech
+Auditory: to ear, how to hear speech. 고막부터 acoustic. 음성파동이 청각세포를 닿는데 세포가 주파수별로 있음(저음~고음까지. 근데 저음, 낮은 주파수 듣는 세포가 더 많다. … 
+사인 곡선이 귀로 듣는 소리의 기본 단위. Tv 채널 조정소리가 사인 곡선임. 
+Making sound: 440hz가 높은 라, 220hz가 낮은 라 … 
+
+Articulation)
+조음. Vocal tract kim…성도킴이생각나
+Nose이, ear비, pharynx인강(목구멍 통로), larynx후두
+larynx에서 소리가 만들어짐 – 피리 속 소리형성 그거처럼 
+epiglottis – spi는 뚜껑. 기도(폐)와 식도(위)를 가르는 역할. 앞에, 왼쪽이 폐랑 연결돼있음. 삼킬 때 이게 막는 역할을 함. 말할 때는 밑에서 발생하는 압력을 이욯해서 … 
+
+5 speech organs  = constrictors = articulators 
+: larynx(voicebox)는 유성음 무성음 결정하는 곳(성대) / 
+
+Pitch: 성대가 얼마나 빨리 떨리는가 유성음에서 – 여자는 높고 남자는 낮고 중국인은 좀 높고 … 언어별, 성별 차이 존재. / 같은 pitch에서도 intensity 차이가 날 수 있음 / 
+
+- Praat 아래그림 y축은 주파수. 까만 부분은 그 부분의 주파수가 강하다, 연한 부분은 그게 약하다로 이해하면 됨. 
+소리는 여러 주파수가 동시에 들리는 건데 주파수별로 어떤 건 세게 어떤 건 약하게 들리는 거 -> 그게 흑백 그라데이션으로 표현된 것
+
+
+푸리에분석 html 
+소리를 스펙트럼으로 나타내주는 거임. 저주파~고주파로. 빛도 스펙트럼(빨~보)
+스펙트럼의 연결, praat의 아래쪽 그림이 스펙트로그램. 
+
+모음 음향학 !! 
+Sound source: 성대, larynx쪽..이고 무슨 모음이든 source는 동일함
+기타소리는 배수로 올라옴. 220, 440, 660 880 이런 식으로.  사람 목소리도 그런 식으로 나타남. 사람 voicebox도 puretone들의 합으로 소리 산출. 그 여러 레이어 중에서 제일 첫번째에 나오는 hz, 제일 낮은 hz를 우리가 인식하는 거. 
+
+남자 목소리는 촘촘하게, 여자 목소리는 듬성듬성 나타남 / 공명 resonance는 일정하게 정해져있음 -> 사람 음성도 입모양에 따라 일정함 다들. 
+
+음성의 패턴 – formants 
+Spectrogram에서 첫번째 주파수(밑에있는거)랑 밑에서 2번째(2번째 주파수)로 모음이 결정됨. 그게 formant. F1, f2다. 
+w/ 모음 혀 높낮이/앞뒤 관계 -> front와 back vowel의 구분 w/ f1, f2: high일수록 f1이 낮고 밑으로 떨어짐. F2는 front back 구분. Front일수록 F2가 큼. X축에 F2, 
+스샷넣기
+
+Formants 결정방식 
+F1 500, f2 1500 쯤에 있는 게 schwa. 
++ ‘standing wave’: 똑같은게 반대방향으로 오면서(반사돼서 오면서) 형성됨
+사람 조음방식은 한 쪽은 막히고 한 쪽은 열려있는 형식. 근데 standing wave 형식으로 발화가 되고, 첫 formant는 500, 둘째는 1500 이렇게 나옴.
+왜 500hz냐 … 소리는 초당 340m를 감. 남자기준 성대부터 입술까지 17센치. F1를 unfold하면 17센치가 4개구간으로 펴짐. 1초 340m 가는 동안 저 formant, 17*4가 몇 개 나오냐. 그게 500hz가 됨. F1, F2가 어떤 모음인지를 규정함. 가장 단순한 모음 schwa를 이걸로 계산해보면 500, 1500이 나옴.
+Hz: 1초에 몇번?
+Sampling rate: 44100hz가 CD음질?ㅇㅇ. 1초를 표현하기 위해 몇 개를 쓰냐. ㅠㅠ저도 나이먹어서 18000위로는 이제 못 듣는다고 합니다 …….
+20~20,000이 가청주파수인데 최소 2배가 있어야 표현이 가능하다. 그래서 44,000hz … 
+
+이게 숙제 아 깃헙에 올리기 … .
+
+
+
+	
