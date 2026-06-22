@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import BodySilhouetteViewer from "@/app/components/BodySilhouetteViewer";
+import ClothingMeasurementSilhouette from "@/app/components/ClothingMeasurementSilhouette";
 import FinalRecommendationCard from "@/app/components/FinalRecommendationCard";
 import SizeSummaryTabs from "@/app/components/SizeSummaryTabs";
 import { loadAnalyzeResult } from "@/app/lib/storage";
@@ -34,6 +35,8 @@ export default function ResultPage() {
         <h1 className="text-2xl font-bold">핏 분석 결과</h1>
         <p className="mt-1 text-sm text-slate-600">부위별 오버레이, 사이즈 요약, 최종 추천을 확인하세요.</p>
       </header>
+
+      <ClothingMeasurementSilhouette />
 
       <section className="grid gap-4 lg:grid-cols-2">
         <BodySilhouetteViewer parts={recommended.parts} />
