@@ -3,5 +3,5 @@
 import BodySilhouetteViewer from "./BodySilhouetteViewer";
 
 export default function Body3DViewer() {
-  return <BodySilhouetteViewer measurements={[]} />;
+  return <BodySilhouetteViewer category="top" measurements={[]} />;
 }

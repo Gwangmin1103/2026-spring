@@ -33,13 +33,23 @@ export type BodyEstimationResult = {
   note: string;
 };
 
+export type GarmentCategory = "top" | "bottom";
+
 export type ProductSizeRow = {
   size: string;
-  shoulderWidthCm: number;
-  chestCircumferenceCm: number;
+  /** 모드맨 단면 실측 — 어깨 너비 */
+  shoulderWidthCm?: number;
+  /** 모드맨 단면 실측 — 가슴 단면 (비교 시 ×2) */
+  chestCircumferenceCm?: number;
+  /** 모드맨 단면 실측 — 암홀 단면 (비교 시 ×2) */
+  armholeCm?: number;
   waistCircumferenceCm?: number;
   hipCircumferenceCm?: number;
   thighCircumferenceCm?: number;
+  /** 모드맨 단면 실측 — 밑단 단면 (비교 시 ×2) */
+  legOpeningCm?: number;
+  frontRiseCm?: number;
+  rearRiseCm?: number;
   sleeveLengthCm?: number;
   totalLengthCm: number;
 };
@@ -51,6 +61,10 @@ export type ProductInfo = {
   modelImageUrl?: string;
   sizeTable: ProductSizeRow[];
   parsingSource: "crawl" | "manual" | "ai";
+  /** 파싱된 상품 카테고리 (없으면 실측 항목으로 추론) */
+  category?: GarmentCategory;
+  /** 파싱된 실측 항목 키 (shoulder, chest, waist 등) */
+  measurementFields?: string[];
 };
 
 export type FitStatus = "타이트" | "딱 맞음" | "여유있음" | "헐렁";

@@ -138,19 +138,74 @@ ${recommendedSize}
 }
 
 type ClaudeSizeChartResponse = {
+  category?: "top" | "bottom";
+  measurementFields?: string[];
   productName?: string;
   platform?: string;
   sizeTable: Array<{
     size: string;
     shoulderWidthCm?: number;
     chestCircumferenceCm?: number;
+    armholeCm?: number;
     waistCircumferenceCm?: number;
     hipCircumferenceCm?: number;
     thighCircumferenceCm?: number;
+    legOpeningCm?: number;
+    frontRiseCm?: number;
+    rearRiseCm?: number;
     sleeveLengthCm?: number;
     totalLengthCm?: number;
   }>;
 };
+
+function inferFieldsFromRow(row: ClaudeSizeChartResponse["sizeTable"][number]): string[] {
+  const fields: string[] = [];
+  if (row.shoulderWidthCm !== undefined) fields.push("shoulder");
+  if (row.chestCircumferenceCm !== undefined) fields.push("chest");
+  if (row.armholeCm !== undefined) fields.push("armhole");
+  if (row.sleeveLengthCm !== undefined) fields.push("sleeve");
+  if (row.waistCircumferenceCm !== undefined) fields.push("waist");
+  if (row.thighCircumferenceCm !== undefined) fields.push("thigh");
+  if (row.legOpeningCm !== undefined) fields.push("legOpening");
+  if (row.frontRiseCm !== undefined) fields.push("frontRise");
+  if (row.rearRiseCm !== undefined) fields.push("rearRise");
+  if (row.totalLengthCm !== undefined) fields.push("length");
+  return fields;
+}
+
+function normalizeSizeRows(rows: ClaudeSizeChartResponse["sizeTable"]): ProductSizeRow[] {
+  const result: ProductSizeRow[] = [];
+  for (const row of rows) {
+    const totalLength = row.totalLengthCm;
+    if (totalLength === undefined) continue;
+
+    const hasTop = row.shoulderWidthCm !== undefined || row.chestCircumferenceCm !== undefined || row.sleeveLengthCm !== undefined;
+    const hasBottom =
+      row.waistCircumferenceCm !== undefined ||
+      row.thighCircumferenceCm !== undefined ||
+      row.legOpeningCm !== undefined ||
+      row.frontRiseCm !== undefined ||
+      row.rearRiseCm !== undefined;
+
+    if (!hasTop && !hasBottom) continue;
+
+    result.push({
+      size: String(row.size).trim(),
+      shoulderWidthCm: row.shoulderWidthCm,
+      chestCircumferenceCm: row.chestCircumferenceCm,
+      armholeCm: row.armholeCm,
+      waistCircumferenceCm: row.waistCircumferenceCm,
+      hipCircumferenceCm: row.hipCircumferenceCm,
+      thighCircumferenceCm: row.thighCircumferenceCm,
+      legOpeningCm: row.legOpeningCm,
+      frontRiseCm: row.frontRiseCm,
+      rearRiseCm: row.rearRiseCm,
+      sleeveLengthCm: row.sleeveLengthCm,
+      totalLengthCm: totalLength
+    });
+  }
+  return result;
+}
 
 function extractJson(text: string): string {
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
@@ -161,27 +216,6 @@ function extractJson(text: string): string {
   return text.trim();
 }
 
-function normalizeSizeRows(rows: ClaudeSizeChartResponse["sizeTable"]): ProductSizeRow[] {
-  const result: ProductSizeRow[] = [];
-  for (const row of rows) {
-    const shoulder = row.shoulderWidthCm;
-    const chest = row.chestCircumferenceCm;
-    const totalLength = row.totalLengthCm;
-    if (shoulder === undefined || chest === undefined || totalLength === undefined) continue;
-    result.push({
-      size: String(row.size).trim(),
-      shoulderWidthCm: shoulder,
-      chestCircumferenceCm: chest,
-      waistCircumferenceCm: row.waistCircumferenceCm,
-      hipCircumferenceCm: row.hipCircumferenceCm,
-      thighCircumferenceCm: row.thighCircumferenceCm,
-      sleeveLengthCm: row.sleeveLengthCm,
-      totalLengthCm: totalLength
-    });
-  }
-  return result;
-}
-
 export async function parseSizeChartWithClaude(
   url: string,
   html: string,
@@ -190,30 +224,38 @@ export async function parseSizeChartWithClaude(
   if (!process.env.ANTHROPIC_API_KEY) return null;
 
   const truncatedHtml = html.slice(0, 120_000);
-  const prompt = `다음은 쇼핑몰 상품 페이지 HTML입니다. 사이즈표(실측)를 찾아 JSON만 출력하세요.
+  const prompt = `다음은 모드맨(Modoodman) 쇼핑몰 상품 페이지 HTML입니다. 사이즈표(단면 실측)를 찾아 JSON만 출력하세요.
 
 URL: ${url}
 
+모드맨은 옷을 바닥에 펼쳐 단면으로 재는 방식입니다. 표에 적힌 숫자는 단면 cm 값입니다.
+
 반드시 아래 형식:
 {
+  "category": "top" | "bottom",
+  "measurementFields": ["shoulder", "chest", ...],
   "productName": "상품명",
-  "platform": "쇼핑몰명",
+  "platform": "modoodman",
   "sizeTable": [
     {
       "size": "M",
       "shoulderWidthCm": 46,
-      "chestCircumferenceCm": 105,
-      "waistCircumferenceCm": 80,
+      "chestCircumferenceCm": 52.5,
+      "armholeCm": 24,
       "sleeveLengthCm": 60,
       "totalLengthCm": 69
     }
   ]
 }
 
+상의(top) 가능 항목: shoulderWidthCm, chestCircumferenceCm, armholeCm, sleeveLengthCm, totalLengthCm
+하의(bottom) 가능 항목: waistCircumferenceCm, thighCircumferenceCm, legOpeningCm, frontRiseCm, rearRiseCm, totalLengthCm
+
 규칙:
-- cm 단위 숫자만 사용
-- size는 페이지에 표시된 사이즈 라벨 그대로 (S, M, L, 95, FREE 등)
-- 어깨/가슴/총장은 가능하면 반드시 포함
+- cm 단위 숫자만, 단면 실측값 그대로 (×2 하지 말 것)
+- category는 사이즈표 항목으로 판별 (어깨/가슴/소매 → top, 허리/허벅지/밑단/밑위 → bottom)
+- measurementFields에는 실제로 파싱된 항목 키 나열
+- totalLengthCm은 가능하면 포함
 - 사이즈표를 찾을 수 없으면 sizeTable을 빈 배열로
 
 HTML:
@@ -234,11 +276,13 @@ ${truncatedHtml}`;
     if (sizeTable.length === 0) return null;
 
     return {
-      platform: parsed.platform ?? "unknown",
+      platform: parsed.platform ?? "modoodman",
       url,
       productName: parsed.productName ?? productName,
       sizeTable,
-      parsingSource: "ai"
+      parsingSource: "ai",
+      category: parsed.category,
+      measurementFields: parsed.measurementFields ?? inferFieldsFromRow(parsed.sizeTable?.[0] ?? {})
     };
   } catch {
     return null;

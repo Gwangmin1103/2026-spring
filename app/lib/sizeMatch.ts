@@ -1,9 +1,9 @@
-import { EstimatedBodyMeasurements } from "./types";
+import { EstimatedBodyMeasurements, GarmentCategory } from "./types";
 
 /** 옷 실측 대비 여유량(옷 - 신체) 기준 핏 판정 */
 export type FitVerdict = "TIGHT" | "FIT" | "REGULAR" | "LOOSE";
 
-export type GarmentCategory = "top" | "bottom";
+export type { GarmentCategory };
 
 export const TOP_MEASUREMENT_KEYS = ["shoulders", "chest", "arm", "sleeve", "length"] as const;
 export const BOTTOM_MEASUREMENT_KEYS = [

@@ -12,6 +12,7 @@ import { FitVerdict } from "@/app/lib/sizeMatch";
 import {
   buildComparisonRows,
   buildSilhouetteMeasurements,
+  detectProductCategory,
   formatBodyMeasurementItems,
   formatProfileSubtitle,
   getSizeLabels,
@@ -21,7 +22,7 @@ import { loadSession, updateSessionManualSizeText } from "@/app/lib/storage";
 import { BodyEstimationResult, ProductInfo } from "@/app/lib/types";
 
 const LEGEND: { verdict: FitVerdict; description: string }[] = [
-  { verdict: "TIGHT", description: "신체 > 옷 실측" },
+  { verdict: "TIGHT", description: "신체 > 옷 (둘레 환산 후)" },
   { verdict: "FIT", description: "차이 0~3cm" },
   { verdict: "REGULAR", description: "차이 3~6cm" },
   { verdict: "LOOSE", description: "차이 6cm 초과" }
@@ -36,6 +37,7 @@ export default function ResultPage() {
   const [parseError, setParseError] = useState<string | null>(null);
   const [manualSizeText, setManualSizeText] = useState("");
   const [retrying, setRetrying] = useState(false);
+  const [heightCm, setHeightCm] = useState<number | undefined>(undefined);
 
   const fetchProduct = useCallback(async (url: string, manual?: string) => {
     const res = await fetch("/api/crawl", {
@@ -58,6 +60,7 @@ export default function ResultPage() {
     }
 
     setSubtitle(formatProfileSubtitle(session.profile));
+    setHeightCm(session.profile.heightCm);
     setManualSizeText(session.manualSizeText ?? "");
     const bodyResult = estimateBodyFromProfile(session.profile);
     setEstimation(bodyResult);
@@ -71,21 +74,21 @@ export default function ResultPage() {
   }, [router, fetchProduct]);
 
   const recommendedSize = useMemo(
-    () => (estimation && product ? recommendSizeFromChart(estimation.estimated, product) : null),
-    [estimation, product]
+    () => (estimation && product ? recommendSizeFromChart(estimation.estimated, product, { heightCm }) : null),
+    [estimation, product, heightCm]
   );
 
   const comparisonRows = useMemo(
-    () => (estimation && product ? buildComparisonRows(estimation.estimated, product) : []),
-    [estimation, product]
+    () => (estimation && product ? buildComparisonRows(estimation.estimated, product, { heightCm }) : []),
+    [estimation, product, heightCm]
   );
 
-  const silhouetteMeasurements = useMemo(
+  const silhouetteData = useMemo(
     () =>
       estimation && product && recommendedSize
-        ? buildSilhouetteMeasurements(estimation.estimated, product, recommendedSize)
-        : [],
-    [estimation, product, recommendedSize]
+        ? buildSilhouetteMeasurements(estimation.estimated, product, recommendedSize, { heightCm })
+        : { category: "top" as const, measurements: [] },
+    [estimation, product, recommendedSize, heightCm]
   );
 
   const onManualSubmit = async (e: FormEvent) => {
@@ -168,7 +171,10 @@ export default function ResultPage() {
       {product && recommendedSize ? (
         <>
           <section className="grid gap-4 lg:grid-cols-2">
-            <BodySilhouetteViewer measurements={silhouetteMeasurements} />
+            <BodySilhouetteViewer
+              category={silhouetteData.category}
+              measurements={silhouetteData.measurements}
+            />
             <RecommendedSizeHero
               sizeLabel={recommendedSize}
               description={`${product.productName} 기준 ${recommendedSize} 사이즈가 가장 균형 잡힙니다. ${estimation.note}`}
@@ -178,7 +184,7 @@ export default function ResultPage() {
           <SizeComparisonTable
             sizeLabels={getSizeLabels(product)}
             rows={comparisonRows}
-            description={`부위별 핏 판정 (${product.productName})`}
+            description={`부위별 핏 판정 · ${detectProductCategory(product) === "top" ? "상의" : "하의"} (모드맨 단면×2 적용)`}
           />
 
           <section className="rounded-2xl border border-dashed border-slate-200 bg-white px-5 py-4">

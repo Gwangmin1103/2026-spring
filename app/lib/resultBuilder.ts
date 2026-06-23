@@ -1,74 +1,81 @@
 import { GarmentSilhouetteMeasurement } from "@/app/components/ClothingMeasurementSilhouette";
 import { SizeComparisonRow } from "@/app/components/SizeComparisonTable";
 import {
+  compareModoodmanPart,
+  detectProductCategory,
+  fitVerdictToStatus,
+  getModoodmanPartMappings,
+  getSilhouetteParts,
+  mappingHasGarmentData
+} from "./modoodman";
+import {
   FitVerdict,
   judgeFitDifference,
+  mapEstimatedBodyToBottom,
   mapEstimatedBodyToTop,
   recommendBestSize,
   compareSizeChart,
-  ParsedGarmentSizeChart,
-  TopGarmentMeasurements
+  ParsedGarmentSizeChart
 } from "./sizeMatch";
-import { EstimatedBodyMeasurements, PartFit, ProductInfo, ProductSizeRow } from "./types";
+import { EstimatedBodyMeasurements, GarmentCategory, PartFit, ProductInfo, ProductSizeRow } from "./types";
 
-const SLEEVE_BY_SIZE: Record<string, number> = {
-  S: 58,
-  M: 60,
-  L: 62,
-  XL: 64
-};
+const round1 = (value: number) => Number(value.toFixed(1));
 
-type PartMapping = {
-  part: string;
-  partFitKey: PartFit["part"] | "소매";
-  bodyCm: (body: EstimatedBodyMeasurements) => number;
-  garmentCm: (row: ProductSizeRow) => number;
-};
+export { fitVerdictToStatus };
 
-const PART_MAPPINGS: PartMapping[] = [
-  { part: "어깨", partFitKey: "어깨", bodyCm: (b) => b.shoulderWidthCm, garmentCm: (r) => r.shoulderWidthCm },
-  { part: "가슴", partFitKey: "가슴", bodyCm: (b) => b.chestCircumferenceCm, garmentCm: (r) => r.chestCircumferenceCm },
-  {
-    part: "허리",
-    partFitKey: "허리",
-    bodyCm: (b) => b.waistCircumferenceCm,
-    garmentCm: (r) => r.waistCircumferenceCm ?? r.chestCircumferenceCm * 0.9
-  },
-  {
-    part: "허벅지",
-    partFitKey: "허벅지",
-    bodyCm: (b) => b.thighCircumferenceCm,
-    garmentCm: (r) => r.thighCircumferenceCm ?? 54
-  },
-  {
-    part: "엉덩이",
-    partFitKey: "힙",
-    bodyCm: (b) => b.hipCircumferenceCm,
-    garmentCm: (r) => r.hipCircumferenceCm ?? r.chestCircumferenceCm * 0.95
-  },
-  { part: "총장", partFitKey: "총장", bodyCm: (b) => b.totalLengthCm, garmentCm: (r) => r.totalLengthCm },
-  {
-    part: "소매",
-    partFitKey: "소매",
-    bodyCm: (b) => b.sleeveLengthCm,
-    garmentCm: (r) => SLEEVE_BY_SIZE[r.size] ?? 60
-  }
-];
+function rowToTopMeasurements(row: ProductSizeRow) {
+  const mapping = getModoodmanPartMappings("top");
+  const get = (part: string) => mapping.find((item) => item.part === part);
 
-export function fitVerdictToStatus(verdict: FitVerdict): PartFit["status"] {
-  switch (verdict) {
-    case "TIGHT":
-      return "타이트";
-    case "FIT":
-      return "딱 맞음";
-    case "REGULAR":
-      return "여유있음";
-    case "LOOSE":
-      return "헐렁";
-  }
+  const shoulder = get("어깨")?.garmentFlatCm(row);
+  const chestFlat = get("가슴")?.garmentFlatCm(row);
+  const armholeFlat = get("암홀")?.garmentFlatCm(row);
+  const sleeve = get("소매")?.garmentFlatCm(row);
+  const length = get("총장")?.garmentFlatCm(row);
+
+  return {
+    shoulders: shoulder,
+    chest: chestFlat !== undefined ? round1(chestFlat * 2) : undefined,
+    arm: armholeFlat !== undefined ? round1(armholeFlat * 2) : undefined,
+    sleeve,
+    length
+  };
+}
+
+function rowToBottomMeasurements(row: ProductSizeRow) {
+  const mapping = getModoodmanPartMappings("bottom");
+  const get = (part: string) => mapping.find((item) => item.part === part);
+
+  const waistFlat = get("허리")?.garmentFlatCm(row);
+  const thighFlat = get("허벅지")?.garmentFlatCm(row);
+  const hemFlat = get("밑단")?.garmentFlatCm(row);
+
+  return {
+    waist: waistFlat !== undefined ? round1(waistFlat * 2) : undefined,
+    thigh: thighFlat !== undefined ? round1(thighFlat * 2) : undefined,
+    legOpening: hemFlat !== undefined ? round1(hemFlat * 2) : undefined,
+    frontRise: get("앞밑위")?.garmentFlatCm(row),
+    rearRise: get("뒷밑위")?.garmentFlatCm(row),
+    outseam: get("총장")?.garmentFlatCm(row)
+  };
 }
 
 export function productInfoToChart(product: ProductInfo): ParsedGarmentSizeChart {
+  const category = detectProductCategory(product);
+
+  if (category === "bottom") {
+    return {
+      category: "bottom",
+      platform: product.platform,
+      productUrl: product.url,
+      productName: product.productName,
+      entries: product.sizeTable.map((row) => ({
+        sizeLabel: row.size,
+        measurements: rowToBottomMeasurements(row)
+      }))
+    };
+  }
+
   return {
     category: "top",
     platform: product.platform,
@@ -76,37 +83,37 @@ export function productInfoToChart(product: ProductInfo): ParsedGarmentSizeChart
     productName: product.productName,
     entries: product.sizeTable.map((row) => ({
       sizeLabel: row.size,
-      measurements: {
-        shoulders: row.shoulderWidthCm,
-        chest: row.chestCircumferenceCm,
-        sleeve: row.sleeveLengthCm ?? SLEEVE_BY_SIZE[row.size],
-        length: row.totalLengthCm
-      } satisfies TopGarmentMeasurements
+      measurements: rowToTopMeasurements(row)
     }))
   };
 }
 
-const round1 = (value: number) => Number(value.toFixed(1));
-
 export function buildComparisonRows(
   body: EstimatedBodyMeasurements,
-  product: ProductInfo
+  product: ProductInfo,
+  options?: { heightCm?: number }
 ): SizeComparisonRow[] {
-  return PART_MAPPINGS.map(({ part, bodyCm, garmentCm }) => ({
-    part,
-    bodyCm: round1(bodyCm(body)),
+  const category = detectProductCategory(product);
+  const mappings = getModoodmanPartMappings(category).filter((mapping) => mappingHasGarmentData(mapping, product));
+
+  return mappings.map((mapping) => ({
+    part: mapping.part,
+    bodyCm: round1(mapping.bodyCm(body, options?.heightCm) ?? 0),
     cells: Object.fromEntries(
-      product.sizeTable.map((row) => {
-        const difference = round1(garmentCm(row) - bodyCm(body));
-        return [
-          row.size,
-          {
-            garmentCm: round1(garmentCm(row)),
-            differenceCm: difference,
-            verdict: judgeFitDifference(difference)
-          }
-        ];
-      })
+      product.sizeTable
+        .map((row) => {
+          const compared = compareModoodmanPart(mapping, body, row, options?.heightCm);
+          if (!compared) return null;
+          return [
+            row.size,
+            {
+              garmentCm: compared.garmentCompareCm,
+              differenceCm: compared.easeCm,
+              verdict: judgeFitDifference(compared.easeCm)
+            }
+          ] as const;
+        })
+        .filter((entry): entry is [string, { garmentCm: number; differenceCm: number; verdict: FitVerdict }] => entry !== null)
     )
   }));
 }
@@ -115,58 +122,87 @@ export function getSizeLabels(product: ProductInfo): string[] {
   return product.sizeTable.map((row) => row.size);
 }
 
-export function recommendSizeFromChart(body: EstimatedBodyMeasurements, product: ProductInfo): string {
+export function recommendSizeFromChart(
+  body: EstimatedBodyMeasurements,
+  product: ProductInfo,
+  options?: { heightCm?: number }
+): string {
   const chart = productInfoToChart(product);
-  const bodyTop = mapEstimatedBodyToTop(body);
-  const results = compareSizeChart(chart, bodyTop);
+  const category = detectProductCategory(product);
+  const bodyMeasurements =
+    category === "bottom"
+      ? mapEstimatedBodyToBottom(body, { heightCm: options?.heightCm })
+      : mapEstimatedBodyToTop(body);
+  const results = compareSizeChart(chart, bodyMeasurements);
   return recommendBestSize(results)?.sizeLabel ?? product.sizeTable[0]?.size ?? "M";
 }
-
-const SILHOUETTE_PARTS: Array<GarmentSilhouetteMeasurement["part"]> = ["어깨", "총장", "소매"];
 
 export function buildSilhouetteMeasurements(
   body: EstimatedBodyMeasurements,
   product: ProductInfo,
-  recommendedSize: string
-): GarmentSilhouetteMeasurement[] {
+  recommendedSize: string,
+  options?: { heightCm?: number }
+): { category: GarmentCategory; measurements: GarmentSilhouetteMeasurement[] } {
+  const category = detectProductCategory(product);
   const row = product.sizeTable.find((r) => r.size === recommendedSize) ?? product.sizeTable[0];
-  if (!row) return [];
+  if (!row) return { category, measurements: [] };
 
-  return PART_MAPPINGS.filter((mapping) => SILHOUETTE_PARTS.includes(mapping.part as GarmentSilhouetteMeasurement["part"]))
-    .map(({ part, bodyCm, garmentCm }) => {
-      const bodyValue = round1(bodyCm(body));
-      const garmentValue = round1(garmentCm(row));
-      const easeCm = round1(garmentValue - bodyValue);
-      const verdict = judgeFitDifference(easeCm);
+  const silhouetteParts = getSilhouetteParts(category);
+  const mappings = getModoodmanPartMappings(category).filter(
+    (mapping) => silhouetteParts.includes(mapping.part as GarmentSilhouetteMeasurement["part"]) && mappingHasGarmentData(mapping, product)
+  );
+
+  const measurements = mappings
+    .map((mapping) => {
+      const compared = compareModoodmanPart(mapping, body, row, options?.heightCm);
+      if (!compared) return null;
+
+      const verdict = judgeFitDifference(compared.easeCm);
       return {
-        part: part as GarmentSilhouetteMeasurement["part"],
-        bodyCm: bodyValue,
-        garmentCm: garmentValue,
-        easeCm,
+        part: mapping.part as GarmentSilhouetteMeasurement["part"],
+        bodyCm: compared.bodyCm,
+        garmentFlatCm: compared.garmentFlatCm,
+        garmentCompareCm: compared.garmentCompareCm,
+        easeCm: compared.easeCm,
         status: fitVerdictToStatus(verdict)
       };
-    });
+    })
+    .filter((item): item is GarmentSilhouetteMeasurement => item !== null);
+
+  return { category, measurements };
 }
 
 export function buildSilhouetteParts(
   body: EstimatedBodyMeasurements,
   product: ProductInfo,
-  recommendedSize: string
+  recommendedSize: string,
+  options?: { heightCm?: number }
 ): PartFit[] {
+  const category = detectProductCategory(product);
   const row = product.sizeTable.find((r) => r.size === recommendedSize) ?? product.sizeTable[0];
   if (!row) return [];
 
-  return PART_MAPPINGS.filter((m) => m.partFitKey !== "소매")
-    .map(({ partFitKey, bodyCm, garmentCm }) => {
-      const easeCm = round1(garmentCm(row) - bodyCm(body));
-      const verdict = judgeFitDifference(easeCm);
+  return getModoodmanPartMappings(category)
+    .filter((mapping) => mappingHasGarmentData(mapping, product))
+    .map((mapping) => {
+      const compared = compareModoodmanPart(mapping, body, row, options?.heightCm);
+      if (!compared) {
+        return {
+          part: mapping.part as PartFit["part"],
+          easeCm: 0,
+          status: "딱 맞음" as PartFit["status"],
+          comment: `${mapping.part} 데이터 없음`
+        };
+      }
+
+      const verdict = judgeFitDifference(compared.easeCm);
       const status = fitVerdictToStatus(verdict);
-      const sign = easeCm > 0 ? `+${easeCm.toFixed(1)}cm` : `${easeCm.toFixed(1)}cm`;
+      const sign = compared.easeCm > 0 ? `+${compared.easeCm.toFixed(1)}cm` : `${compared.easeCm.toFixed(1)}cm`;
       return {
-        part: partFitKey as PartFit["part"],
-        easeCm,
+        part: mapping.part as PartFit["part"],
+        easeCm: compared.easeCm,
         status,
-        comment: `${partFitKey} 여유량 ${sign} (${status})`
+        comment: `${mapping.part} 여유량 ${sign} (${status})`
       };
     });
 }
@@ -187,3 +223,5 @@ export function formatProfileSubtitle(profile: { gender: "male" | "female"; heig
   const genderLabel = profile.gender === "male" ? "남성" : "여성";
   return `${genderLabel} · ${profile.heightCm}cm · ${profile.weightKg}kg`;
 }
+
+export { detectProductCategory };
