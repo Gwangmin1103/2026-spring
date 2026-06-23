@@ -55,7 +55,7 @@ export const DEMO_REFERENCE_PRODUCT: ProductInfo = {
   parsingSource: "manual"
 };
 
-const SLEEVE_BY_SIZE: Record<ProductSizeRow["size"], number> = {
+const SLEEVE_BY_SIZE: Record<string, number> = {
   S: 58.0,
   M: 60.0,
   L: 62.0,

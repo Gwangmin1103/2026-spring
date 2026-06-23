@@ -34,22 +34,23 @@ export type BodyEstimationResult = {
 };
 
 export type ProductSizeRow = {
-  size: "S" | "M" | "L" | "XL";
+  size: string;
   shoulderWidthCm: number;
   chestCircumferenceCm: number;
   waistCircumferenceCm?: number;
   hipCircumferenceCm?: number;
   thighCircumferenceCm?: number;
+  sleeveLengthCm?: number;
   totalLengthCm: number;
 };
 
 export type ProductInfo = {
-  platform: "musinsa" | "29cm";
+  platform: string;
   url: string;
   productName: string;
   modelImageUrl?: string;
   sizeTable: ProductSizeRow[];
-  parsingSource: "crawl" | "manual";
+  parsingSource: "crawl" | "manual" | "ai";
 };
 
 export type FitStatus = "타이트" | "딱 맞음" | "여유있음" | "헐렁";
@@ -62,13 +63,13 @@ export type PartFit = {
 };
 
 export type SizeAnalysis = {
-  size: "S" | "M" | "L" | "XL";
+  size: string;
   highlights: [string, string, string];
   parts: PartFit[];
 };
 
 export type AnalyzeResult = {
   analyses: SizeAnalysis[];
-  recommendedSize: "S" | "M" | "L" | "XL";
+  recommendedSize: string;
   aiComment: string;
 };

@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { estimateBodyFromProfile } from "./bodyEstimate";
-import { BodyEstimationResult, BodyProfileInput, ProductInfo, SizeAnalysis } from "./types";
+import { BodyEstimationResult, BodyProfileInput, ProductInfo, ProductSizeRow, SizeAnalysis } from "./types";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY
@@ -10,7 +10,7 @@ type CreateFinalFitCommentParams = {
   bodyEstimation: BodyEstimationResult;
   product: ProductInfo;
   analyses: SizeAnalysis[];
-  recommendedSize: "S" | "M" | "L" | "XL";
+  recommendedSize: string;
 };
 
 export async function estimateBodyFromPhotos(input: BodyProfileInput): Promise<BodyEstimationResult> {
@@ -135,4 +135,112 @@ ${recommendedSize}
   const first = response.content[0];
   if (first && first.type === "text") return first.text;
   return "핏 분석 문장을 생성하지 못했습니다.";
+}
+
+type ClaudeSizeChartResponse = {
+  productName?: string;
+  platform?: string;
+  sizeTable: Array<{
+    size: string;
+    shoulderWidthCm?: number;
+    chestCircumferenceCm?: number;
+    waistCircumferenceCm?: number;
+    hipCircumferenceCm?: number;
+    thighCircumferenceCm?: number;
+    sleeveLengthCm?: number;
+    totalLengthCm?: number;
+  }>;
+};
+
+function extractJson(text: string): string {
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (fenced?.[1]) return fenced[1].trim();
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start >= 0 && end > start) return text.slice(start, end + 1);
+  return text.trim();
+}
+
+function normalizeSizeRows(rows: ClaudeSizeChartResponse["sizeTable"]): ProductSizeRow[] {
+  const result: ProductSizeRow[] = [];
+  for (const row of rows) {
+    const shoulder = row.shoulderWidthCm;
+    const chest = row.chestCircumferenceCm;
+    const totalLength = row.totalLengthCm;
+    if (shoulder === undefined || chest === undefined || totalLength === undefined) continue;
+    result.push({
+      size: String(row.size).trim(),
+      shoulderWidthCm: shoulder,
+      chestCircumferenceCm: chest,
+      waistCircumferenceCm: row.waistCircumferenceCm,
+      hipCircumferenceCm: row.hipCircumferenceCm,
+      thighCircumferenceCm: row.thighCircumferenceCm,
+      sleeveLengthCm: row.sleeveLengthCm,
+      totalLengthCm: totalLength
+    });
+  }
+  return result;
+}
+
+export async function parseSizeChartWithClaude(
+  url: string,
+  html: string,
+  productName: string
+): Promise<ProductInfo | null> {
+  if (!process.env.ANTHROPIC_API_KEY) return null;
+
+  const truncatedHtml = html.slice(0, 120_000);
+  const prompt = `다음은 쇼핑몰 상품 페이지 HTML입니다. 사이즈표(실측)를 찾아 JSON만 출력하세요.
+
+URL: ${url}
+
+반드시 아래 형식:
+{
+  "productName": "상품명",
+  "platform": "쇼핑몰명",
+  "sizeTable": [
+    {
+      "size": "M",
+      "shoulderWidthCm": 46,
+      "chestCircumferenceCm": 105,
+      "waistCircumferenceCm": 80,
+      "sleeveLengthCm": 60,
+      "totalLengthCm": 69
+    }
+  ]
+}
+
+규칙:
+- cm 단위 숫자만 사용
+- size는 페이지에 표시된 사이즈 라벨 그대로 (S, M, L, 95, FREE 등)
+- 어깨/가슴/총장은 가능하면 반드시 포함
+- 사이즈표를 찾을 수 없으면 sizeTable을 빈 배열로
+
+HTML:
+${truncatedHtml}`;
+
+  const response = await anthropic.messages.create({
+    model: "claude-3-5-sonnet-20241022",
+    max_tokens: 2000,
+    messages: [{ role: "user", content: prompt }]
+  });
+
+  const first = response.content[0];
+  if (!first || first.type !== "text") return null;
+
+  try {
+    const parsed = JSON.parse(extractJson(first.text)) as ClaudeSizeChartResponse;
+    const sizeTable = normalizeSizeRows(parsed.sizeTable ?? []);
+    if (sizeTable.length === 0) return null;
+
+    return {
+      platform: parsed.platform ?? "unknown",
+      url,
+      productName: parsed.productName ?? productName,
+      sizeTable,
+      parsingSource: "ai"
+    };
+  } catch {
+    return null;
+  }
 }

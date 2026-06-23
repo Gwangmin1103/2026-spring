@@ -1,9 +1,13 @@
 import * as cheerio from "cheerio";
+import { parseSizeChartWithClaude } from "./claude";
 import { ProductInfo, ProductSizeRow } from "./types";
 
-function parsePlatform(url: string): ProductInfo["platform"] {
-  if (url.includes("29cm")) return "29cm";
-  return "musinsa";
+function parsePlatform(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "unknown";
+  }
 }
 
 function detectProductName($: cheerio.CheerioAPI): string {
@@ -33,16 +37,20 @@ function parseManualSizeText(text: string): ProductSizeRow[] {
   const rows: ProductSizeRow[] = [];
   for (const line of lines) {
     const columns = line.split(/[|,\t/]/).map((x) => x.trim());
-    const size = columns[0]?.toUpperCase() as ProductSizeRow["size"];
-    if (!["S", "M", "L", "XL"].includes(size)) continue;
+    const size = columns[0];
+    if (!size) continue;
     const shoulder = parseNumber(columns[1] ?? "");
     const chest = parseNumber(columns[2] ?? "");
     const totalLength = parseNumber(columns[3] ?? "");
+    const waist = parseNumber(columns[4] ?? "");
+    const sleeve = parseNumber(columns[5] ?? "");
     if (shoulder === null || chest === null || totalLength === null) continue;
     rows.push({
       size,
       shoulderWidthCm: shoulder,
       chestCircumferenceCm: chest,
+      waistCircumferenceCm: waist ?? undefined,
+      sleeveLengthCm: sleeve ?? undefined,
       totalLengthCm: totalLength
     });
   }
@@ -56,8 +64,8 @@ function parseHtmlSizeTable($: cheerio.CheerioAPI): ProductSizeRow[] {
       .find("th,td")
       .toArray()
       .map((td) => $(td).text().trim());
-    const size = cells[0]?.toUpperCase() as ProductSizeRow["size"];
-    if (!["S", "M", "L", "XL"].includes(size)) return;
+    const size = cells[0];
+    if (!size) return;
 
     const shoulder = parseNumber(cells[1] ?? "");
     const chest = parseNumber(cells[2] ?? "");
@@ -74,26 +82,40 @@ function parseHtmlSizeTable($: cheerio.CheerioAPI): ProductSizeRow[] {
   return rows;
 }
 
-export function parseProduct(url: string, html: string, manualSizeText?: string): ProductInfo {
+export async function parseProduct(
+  url: string,
+  html: string,
+  manualSizeText?: string
+): Promise<ProductInfo> {
   const $ = cheerio.load(html);
+  const productName = detectProductName($);
   const parsedRows = parseHtmlSizeTable($);
   const manualRows = manualSizeText ? parseManualSizeText(manualSizeText) : [];
-  const sizeTable = parsedRows.length > 0 ? parsedRows : manualRows;
 
-  return {
-    platform: parsePlatform(url),
-    url,
-    productName: detectProductName($),
-    modelImageUrl: detectModelImage($),
-    sizeTable:
-      sizeTable.length > 0
-        ? sizeTable
-        : [
-            { size: "S", shoulderWidthCm: 44, chestCircumferenceCm: 100, totalLengthCm: 67 },
-            { size: "M", shoulderWidthCm: 46, chestCircumferenceCm: 105, totalLengthCm: 69 },
-            { size: "L", shoulderWidthCm: 48, chestCircumferenceCm: 110, totalLengthCm: 71 },
-            { size: "XL", shoulderWidthCm: 50, chestCircumferenceCm: 116, totalLengthCm: 73 }
-          ],
-    parsingSource: parsedRows.length > 0 ? "crawl" : "manual"
-  };
+  if (parsedRows.length > 0) {
+    return {
+      platform: parsePlatform(url),
+      url,
+      productName,
+      modelImageUrl: detectModelImage($),
+      sizeTable: parsedRows,
+      parsingSource: "crawl"
+    };
+  }
+
+  if (manualRows.length > 0) {
+    return {
+      platform: parsePlatform(url),
+      url,
+      productName,
+      modelImageUrl: detectModelImage($),
+      sizeTable: manualRows,
+      parsingSource: "manual"
+    };
+  }
+
+  const aiParsed = await parseSizeChartWithClaude(url, html, productName);
+  if (aiParsed) return aiParsed;
+
+  throw new Error("사이즈표를 찾지 못했습니다. 수동 입력을 사용해주세요.");
 }

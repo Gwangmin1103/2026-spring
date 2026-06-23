@@ -23,13 +23,11 @@ export async function POST(req: NextRequest) {
     });
 
     const html = res.ok ? await res.text() : "<html><title>상품명 미확인</title></html>";
-    const parsed = parseProduct(url, html, manualSizeText);
+    const parsed = await parseProduct(url, html, manualSizeText);
 
     return NextResponse.json({ success: true, data: parsed });
   } catch (error) {
-    return NextResponse.json(
-      { error: "크롤링 중 오류가 발생했습니다.", detail: String(error) },
-      { status: 500 }
-    );
+    const message = error instanceof Error ? error.message : "크롤링 중 오류가 발생했습니다.";
+    return NextResponse.json({ success: false, error: message, detail: String(error) }, { status: 422 });
   }
 }
