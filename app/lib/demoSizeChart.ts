@@ -98,12 +98,22 @@ export function buildDemoComparisonRows(
   body: EstimatedBodyMeasurements,
   product: ProductInfo = DEMO_REFERENCE_PRODUCT
 ): SizeComparisonRow[] {
+  const round1 = (value: number) => Number(value.toFixed(1));
+
   return PART_MAPPINGS.map(({ part, bodyCm, garmentCm }) => ({
     part,
-    verdicts: Object.fromEntries(
+    bodyCm: round1(bodyCm(body)),
+    cells: Object.fromEntries(
       product.sizeTable.map((row) => {
-        const difference = garmentCm(row) - bodyCm(body);
-        return [row.size, judgeFitDifference(difference)];
+        const difference = round1(garmentCm(row) - bodyCm(body));
+        return [
+          row.size,
+          {
+            garmentCm: round1(garmentCm(row)),
+            differenceCm: difference,
+            verdict: judgeFitDifference(difference)
+          }
+        ];
       })
     )
   }));

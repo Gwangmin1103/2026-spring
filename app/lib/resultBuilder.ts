@@ -1,3 +1,4 @@
+import { GarmentSilhouetteMeasurement } from "@/app/components/ClothingMeasurementSilhouette";
 import { SizeComparisonRow } from "@/app/components/SizeComparisonTable";
 import {
   FitVerdict,
@@ -85,16 +86,26 @@ export function productInfoToChart(product: ProductInfo): ParsedGarmentSizeChart
   };
 }
 
+const round1 = (value: number) => Number(value.toFixed(1));
+
 export function buildComparisonRows(
   body: EstimatedBodyMeasurements,
   product: ProductInfo
 ): SizeComparisonRow[] {
   return PART_MAPPINGS.map(({ part, bodyCm, garmentCm }) => ({
     part,
-    verdicts: Object.fromEntries(
+    bodyCm: round1(bodyCm(body)),
+    cells: Object.fromEntries(
       product.sizeTable.map((row) => {
-        const difference = garmentCm(row) - bodyCm(body);
-        return [row.size, judgeFitDifference(difference)];
+        const difference = round1(garmentCm(row) - bodyCm(body));
+        return [
+          row.size,
+          {
+            garmentCm: round1(garmentCm(row)),
+            differenceCm: difference,
+            verdict: judgeFitDifference(difference)
+          }
+        ];
       })
     )
   }));
@@ -111,6 +122,32 @@ export function recommendSizeFromChart(body: EstimatedBodyMeasurements, product:
   return recommendBestSize(results)?.sizeLabel ?? product.sizeTable[0]?.size ?? "M";
 }
 
+const SILHOUETTE_PARTS: Array<GarmentSilhouetteMeasurement["part"]> = ["어깨", "총장", "소매"];
+
+export function buildSilhouetteMeasurements(
+  body: EstimatedBodyMeasurements,
+  product: ProductInfo,
+  recommendedSize: string
+): GarmentSilhouetteMeasurement[] {
+  const row = product.sizeTable.find((r) => r.size === recommendedSize) ?? product.sizeTable[0];
+  if (!row) return [];
+
+  return PART_MAPPINGS.filter((mapping) => SILHOUETTE_PARTS.includes(mapping.part as GarmentSilhouetteMeasurement["part"]))
+    .map(({ part, bodyCm, garmentCm }) => {
+      const bodyValue = round1(bodyCm(body));
+      const garmentValue = round1(garmentCm(row));
+      const easeCm = round1(garmentValue - bodyValue);
+      const verdict = judgeFitDifference(easeCm);
+      return {
+        part: part as GarmentSilhouetteMeasurement["part"],
+        bodyCm: bodyValue,
+        garmentCm: garmentValue,
+        easeCm,
+        status: fitVerdictToStatus(verdict)
+      };
+    });
+}
+
 export function buildSilhouetteParts(
   body: EstimatedBodyMeasurements,
   product: ProductInfo,
@@ -121,7 +158,7 @@ export function buildSilhouetteParts(
 
   return PART_MAPPINGS.filter((m) => m.partFitKey !== "소매")
     .map(({ partFitKey, bodyCm, garmentCm }) => {
-      const easeCm = garmentCm(row) - bodyCm(body);
+      const easeCm = round1(garmentCm(row) - bodyCm(body));
       const verdict = judgeFitDifference(easeCm);
       const status = fitVerdictToStatus(verdict);
       const sign = easeCm > 0 ? `+${easeCm.toFixed(1)}cm` : `${easeCm.toFixed(1)}cm`;

@@ -1,9 +1,17 @@
+import { Fragment } from "react";
 import FitVerdictBadge from "@/app/components/FitVerdictBadge";
 import { FitVerdict } from "@/app/lib/sizeMatch";
 
+export type SizeComparisonCell = {
+  garmentCm: number;
+  differenceCm: number;
+  verdict: FitVerdict;
+};
+
 export type SizeComparisonRow = {
   part: string;
-  verdicts: Record<string, FitVerdict>;
+  bodyCm: number;
+  cells: Record<string, SizeComparisonCell>;
 };
 
 type Props = {
@@ -11,6 +19,15 @@ type Props = {
   rows: SizeComparisonRow[];
   description?: string;
 };
+
+function formatCm(value: number) {
+  return `${value.toFixed(1)}cm`;
+}
+
+function formatDifference(value: number) {
+  const sign = value > 0 ? "+" : "";
+  return `${sign}${value.toFixed(1)}`;
+}
 
 export default function SizeComparisonTable({
   sizeLabels,
@@ -28,11 +45,31 @@ export default function SizeComparisonTable({
         <table className="min-w-full text-sm">
           <thead>
             <tr className="border-b border-slate-100 bg-slate-50 text-left">
-              <th className="px-5 py-3 font-semibold text-slate-600">부위</th>
+              <th rowSpan={2} className="px-5 py-3 font-semibold text-slate-600">
+                부위
+              </th>
+              <th rowSpan={2} className="px-4 py-3 font-semibold text-slate-600">
+                내 신체 치수
+              </th>
               {sizeLabels.map((size) => (
-                <th key={size} className="px-4 py-3 text-center font-semibold text-slate-600">
+                <th key={size} colSpan={3} className="border-l border-slate-200 px-4 py-3 text-center font-semibold text-slate-600">
                   {size}
                 </th>
+              ))}
+            </tr>
+            <tr className="border-b border-slate-100 bg-slate-50 text-left">
+              {sizeLabels.map((size) => (
+                <Fragment key={`${size}-subheaders`}>
+                  <th className="border-l border-slate-200 px-3 py-2 text-center text-xs font-semibold text-slate-500">
+                    실측
+                  </th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-slate-500">
+                    차이
+                  </th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-slate-500">
+                    판정
+                  </th>
+                </Fragment>
               ))}
             </tr>
           </thead>
@@ -40,11 +77,40 @@ export default function SizeComparisonTable({
             {rows.map((row) => (
               <tr key={row.part} className="border-b border-slate-50 last:border-0">
                 <td className="px-5 py-3.5 font-medium text-slate-800">{row.part}</td>
-                {sizeLabels.map((size) => (
-                  <td key={size} className="px-4 py-3.5 text-center">
-                    <FitVerdictBadge verdict={row.verdicts[size]} />
-                  </td>
-                ))}
+                <td className="px-4 py-3.5 text-slate-700">{formatCm(row.bodyCm)}</td>
+                {sizeLabels.map((size) => {
+                  const cell = row.cells[size];
+                  if (!cell) {
+                    return (
+                      <Fragment key={`${row.part}-${size}-empty`}>
+                        <td className="border-l border-slate-100 px-3 py-3.5 text-center text-slate-400">—</td>
+                        <td className="px-3 py-3.5 text-center text-slate-400">—</td>
+                        <td className="px-3 py-3.5 text-center text-slate-400">—</td>
+                      </Fragment>
+                    );
+                  }
+
+                  const diffClass =
+                    cell.differenceCm < 0
+                      ? "text-rose-600"
+                      : cell.differenceCm <= 3
+                        ? "text-emerald-600"
+                        : "text-blue-600";
+
+                  return (
+                    <Fragment key={`${row.part}-${size}`}>
+                      <td className="border-l border-slate-100 px-3 py-3.5 text-center text-slate-700">
+                        {formatCm(cell.garmentCm)}
+                      </td>
+                      <td className={`px-3 py-3.5 text-center font-semibold ${diffClass}`}>
+                        {formatDifference(cell.differenceCm)}
+                      </td>
+                      <td className="px-3 py-3.5 text-center">
+                        <FitVerdictBadge verdict={cell.verdict} />
+                      </td>
+                    </Fragment>
+                  );
+                })}
               </tr>
             ))}
           </tbody>

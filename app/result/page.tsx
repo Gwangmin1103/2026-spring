@@ -11,7 +11,7 @@ import { estimateBodyFromProfile } from "@/app/lib/bodyEstimate";
 import { FitVerdict } from "@/app/lib/sizeMatch";
 import {
   buildComparisonRows,
-  buildSilhouetteParts,
+  buildSilhouetteMeasurements,
   formatBodyMeasurementItems,
   formatProfileSubtitle,
   getSizeLabels,
@@ -80,10 +80,10 @@ export default function ResultPage() {
     [estimation, product]
   );
 
-  const silhouetteParts = useMemo(
+  const silhouetteMeasurements = useMemo(
     () =>
       estimation && product && recommendedSize
-        ? buildSilhouetteParts(estimation.estimated, product, recommendedSize)
+        ? buildSilhouetteMeasurements(estimation.estimated, product, recommendedSize)
         : [],
     [estimation, product, recommendedSize]
   );
@@ -168,7 +168,7 @@ export default function ResultPage() {
       {product && recommendedSize ? (
         <>
           <section className="grid gap-4 lg:grid-cols-2">
-            <BodySilhouetteViewer parts={silhouetteParts} />
+            <BodySilhouetteViewer measurements={silhouetteMeasurements} />
             <RecommendedSizeHero
               sizeLabel={recommendedSize}
               description={`${product.productName} 기준 ${recommendedSize} 사이즈가 가장 균형 잡힙니다. ${estimation.note}`}
