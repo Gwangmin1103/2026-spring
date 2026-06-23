@@ -1,4 +1,4 @@
-import { BodyEstimationResult, ProductInfo } from "./types";
+import { BodyEstimationResult, Gender, ProductInfo } from "./types";
 
 const BODY_KEY = "fit-analyzer-body-estimation";
 const PROFILE_KEY = "fit-analyzer-profile";
@@ -8,6 +8,7 @@ const RESULT_KEY = "fit-analyzer-result";
 export type StoredProfile = {
   heightCm: number;
   weightKg: number;
+  gender: Gender;
 };
 
 export function saveBodyProfile(profile: StoredProfile) {

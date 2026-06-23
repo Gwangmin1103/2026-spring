@@ -6,19 +6,23 @@ export type ReferenceObjectSpec = {
   dimensionsMm: string;
 };
 
+export type Gender = "male" | "female";
+
 export type EstimatedBodyMeasurements = {
   shoulderWidthCm: number;
   chestCircumferenceCm: number;
   waistCircumferenceCm: number;
-  hipCircumferenceCm: number;
   thighCircumferenceCm: number;
-  torsoLengthCm: number;
+  hipCircumferenceCm: number;
+  totalLengthCm: number;
+  sleeveLengthCm: number;
 };
 
 export type BodyProfileInput = {
   heightCm: number;
   weightKg: number;
-  fullBodyImageBase64: string;
+  gender: Gender;
+  fullBodyImageBase64?: string;
   referenceObjectType?: ReferenceObjectType;
   referenceImageBase64?: string;
 };
@@ -51,7 +55,7 @@ export type ProductInfo = {
 export type FitStatus = "타이트" | "딱 맞음" | "여유있음" | "헐렁";
 
 export type PartFit = {
-  part: "어깨" | "가슴" | "허리" | "힙" | "허벅지" | "총장";
+  part: "어깨" | "가슴" | "허리" | "허벅지" | "힙" | "총장";
   easeCm: number;
   status: FitStatus;
   comment: string;

@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { estimateBodyFromProfile } from "./bodyEstimate";
 import { BodyEstimationResult, BodyProfileInput, ProductInfo, SizeAnalysis } from "./types";
 
 const anthropic = new Anthropic({
@@ -13,19 +14,12 @@ type CreateFinalFitCommentParams = {
 };
 
 export async function estimateBodyFromPhotos(input: BodyProfileInput): Promise<BodyEstimationResult> {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return {
-      estimated: {
-        shoulderWidthCm: Number((input.heightCm * 0.25).toFixed(1)),
-        chestCircumferenceCm: Number((input.heightCm * 0.53).toFixed(1)),
-        waistCircumferenceCm: Number((input.heightCm * 0.46).toFixed(1)),
-        hipCircumferenceCm: Number((input.heightCm * 0.52).toFixed(1)),
-        thighCircumferenceCm: Number((input.heightCm * 0.31).toFixed(1)),
-        torsoLengthCm: Number((input.heightCm * 0.4).toFixed(1))
-      },
-      confidence: "low",
-      note: "API 키가 없어 키/몸무게 기반 근사치로 추정했습니다."
-    };
+  if (!process.env.ANTHROPIC_API_KEY || !input.fullBodyImageBase64) {
+    return estimateBodyFromProfile({
+      heightCm: input.heightCm,
+      weightKg: input.weightKg,
+      gender: input.gender ?? "male"
+    });
   }
 
   const content: Anthropic.Messages.MessageParam["content"] = [
@@ -37,9 +31,10 @@ export async function estimateBodyFromPhotos(input: BodyProfileInput): Promise<B
   "shoulderWidthCm": number,
   "chestCircumferenceCm": number,
   "waistCircumferenceCm": number,
-  "hipCircumferenceCm": number,
   "thighCircumferenceCm": number,
-  "torsoLengthCm": number,
+  "hipCircumferenceCm": number,
+  "totalLengthCm": number,
+  "sleeveLengthCm": number,
   "confidence": "low" | "medium" | "high",
   "note": "string"
 }
@@ -80,9 +75,10 @@ export async function estimateBodyFromPhotos(input: BodyProfileInput): Promise<B
     shoulderWidthCm: number;
     chestCircumferenceCm: number;
     waistCircumferenceCm: number;
-    hipCircumferenceCm: number;
     thighCircumferenceCm: number;
-    torsoLengthCm: number;
+    hipCircumferenceCm: number;
+    totalLengthCm: number;
+    sleeveLengthCm: number;
     confidence: "low" | "medium" | "high";
     note: string;
   };
@@ -92,9 +88,10 @@ export async function estimateBodyFromPhotos(input: BodyProfileInput): Promise<B
       shoulderWidthCm: parsed.shoulderWidthCm,
       chestCircumferenceCm: parsed.chestCircumferenceCm,
       waistCircumferenceCm: parsed.waistCircumferenceCm,
-      hipCircumferenceCm: parsed.hipCircumferenceCm,
       thighCircumferenceCm: parsed.thighCircumferenceCm,
-      torsoLengthCm: parsed.torsoLengthCm
+      hipCircumferenceCm: parsed.hipCircumferenceCm,
+      totalLengthCm: parsed.totalLengthCm,
+      sleeveLengthCm: parsed.sleeveLengthCm
     },
     confidence: parsed.confidence,
     note: parsed.note

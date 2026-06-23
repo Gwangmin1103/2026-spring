@@ -4,16 +4,15 @@ import { createFinalFitComment } from "@/app/lib/claude";
 import { BodyEstimationResult, ProductInfo } from "@/app/lib/types";
 
 type AnalyzeRequestBody = {
-  heightCm: number;
   bodyEstimation: BodyEstimationResult;
   product: ProductInfo;
 };
 
 export async function POST(req: NextRequest) {
   try {
-    const { heightCm, bodyEstimation, product } = (await req.json()) as AnalyzeRequestBody;
+    const { bodyEstimation, product } = (await req.json()) as AnalyzeRequestBody;
 
-    const analyzed = analyzeAllSizes(bodyEstimation.estimated, product, heightCm);
+    const analyzed = analyzeAllSizes(bodyEstimation.estimated, product);
     const aiDescription = await createFinalFitComment({
       bodyEstimation,
       product,

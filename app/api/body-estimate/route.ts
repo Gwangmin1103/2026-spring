@@ -1,15 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
-import { estimateBodyFromPhotos } from "@/app/lib/claude";
-import { BodyProfileInput } from "@/app/lib/types";
+import { estimateBodyFromProfile } from "@/app/lib/bodyEstimate";
+import { BodyProfileInput, Gender } from "@/app/lib/types";
+
+function parseGender(value: unknown): Gender | null {
+  if (value === "male" || value === "female") return value;
+  return null;
+}
 
 export async function POST(req: NextRequest) {
   try {
     const payload = (await req.json()) as BodyProfileInput;
-    if (!payload.fullBodyImageBase64 || !payload.heightCm || !payload.weightKg) {
-      return NextResponse.json({ error: "전신 사진, 키, 몸무게는 필수입니다." }, { status: 400 });
+    const heightCm = Number(payload.heightCm);
+    const weightKg = Number(payload.weightKg);
+    const gender = parseGender(payload.gender);
+
+    if (!heightCm || !weightKg || heightCm <= 0 || weightKg <= 0) {
+      return NextResponse.json({ error: "유효한 키와 몸무게를 입력해주세요." }, { status: 400 });
     }
 
-    const result = await estimateBodyFromPhotos(payload);
+    if (!gender) {
+      return NextResponse.json({ error: "성별(남/여)을 선택해주세요." }, { status: 400 });
+    }
+
+    const result = estimateBodyFromProfile({ heightCm, weightKg, gender });
+
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
     return NextResponse.json(

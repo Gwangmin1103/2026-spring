@@ -2,7 +2,7 @@
 
 import { ChangeEvent, FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ReferenceObjectSpec, ReferenceObjectType } from "@/app/lib/types";
+import { Gender, ReferenceObjectSpec, ReferenceObjectType } from "@/app/lib/types";
 import { saveBodyEstimation, saveBodyProfile } from "@/app/lib/storage";
 
 const OBJECTS: ReferenceObjectSpec[] = [
@@ -24,6 +24,7 @@ export default function BodyStepForm() {
   const router = useRouter();
   const [heightCm, setHeightCm] = useState(175);
   const [weightKg, setWeightKg] = useState(70);
+  const [gender, setGender] = useState<Gender>("male");
   const [fullBodyFile, setFullBodyFile] = useState<File | null>(null);
   const [referenceType, setReferenceType] = useState<ReferenceObjectType | undefined>();
   const [referenceFile, setReferenceFile] = useState<File | null>(null);
@@ -42,10 +43,6 @@ export default function BodyStepForm() {
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!fullBodyFile) {
-      setError("전신 사진은 필수입니다.");
-      return;
-    }
     if (referenceType && !referenceFile) {
       setError("기준 물체를 선택했다면 해당 사진도 업로드해주세요.");
       return;
@@ -53,7 +50,7 @@ export default function BodyStepForm() {
 
     try {
       setLoading(true);
-      const fullBodyImageBase64 = await toBase64(fullBodyFile);
+      const fullBodyImageBase64 = fullBodyFile ? await toBase64(fullBodyFile) : undefined;
       const referenceImageBase64 = referenceFile ? await toBase64(referenceFile) : undefined;
       const res = await fetch("/api/body-estimate", {
         method: "POST",
@@ -61,6 +58,7 @@ export default function BodyStepForm() {
         body: JSON.stringify({
           heightCm,
           weightKg,
+          gender,
           fullBodyImageBase64,
           referenceObjectType: referenceType,
           referenceImageBase64
@@ -70,7 +68,7 @@ export default function BodyStepForm() {
       const json = await res.json();
       if (!res.ok || !json.success) throw new Error(json.error ?? "신체 추정 실패");
 
-      saveBodyProfile({ heightCm, weightKg });
+      saveBodyProfile({ heightCm, weightKg, gender });
       saveBodyEstimation(json.data);
       router.push("/body/result");
     } catch (err) {
@@ -84,11 +82,13 @@ export default function BodyStepForm() {
     <form onSubmit={onSubmit} className="space-y-5 rounded-2xl bg-white p-5 shadow-sm">
       <div className="space-y-2">
         <h2 className="text-lg font-semibold">STEP 1. 신체 정보 입력</h2>
-        <p className="text-sm text-slate-600">전신 사진 + 키/몸무게만 입력하면 AI가 치수를 추정합니다.</p>
+        <p className="text-sm text-slate-600">
+          성별, 키, 몸무게를 입력하면 한국 성인 평균 체형 비율로 치수를 추정합니다. (사진은 선택)
+        </p>
       </div>
 
       <label className="block space-y-1 text-sm">
-        <span className="font-medium">전신 사진 업로드 (필수)</span>
+        <span className="font-medium">전신 사진 업로드 (선택)</span>
         <input type="file" accept="image/*" onChange={onFile(setFullBodyFile)} className="w-full text-sm" />
       </label>
 
@@ -115,6 +115,30 @@ export default function BodyStepForm() {
         <span className="font-medium">기준 물체 사진 업로드 ({selectedLabel})</span>
         <input type="file" accept="image/*" onChange={onFile(setReferenceFile)} className="w-full text-sm" />
       </label>
+
+      <div className="space-y-2">
+        <span className="text-sm font-medium">성별</span>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setGender("male")}
+            className={`rounded-xl border px-3 py-2 text-sm font-medium ${
+              gender === "male" ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200"
+            }`}
+          >
+            남성
+          </button>
+          <button
+            type="button"
+            onClick={() => setGender("female")}
+            className={`rounded-xl border px-3 py-2 text-sm font-medium ${
+              gender === "female" ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200"
+            }`}
+          >
+            여성
+          </button>
+        </div>
+      </div>
 
       <div className="grid grid-cols-2 gap-3">
         <label className="space-y-1 text-sm">

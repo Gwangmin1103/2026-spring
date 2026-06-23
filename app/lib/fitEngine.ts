@@ -13,21 +13,20 @@ function buildComment(part: PartFit["part"], status: PartFit["status"], easeCm: 
   return `${part} 여유량 ${sign}로 ${status}입니다.`;
 }
 
-function bodyPartFits(body: EstimatedBodyMeasurements, size: ProductSizeRow, heightCm: number): PartFit[] {
+function bodyPartFits(body: EstimatedBodyMeasurements, size: ProductSizeRow): PartFit[] {
   const shoulderEase = size.shoulderWidthCm - body.shoulderWidthCm;
   const chestEase = size.chestCircumferenceCm - body.chestCircumferenceCm;
   const waistEase = (size.waistCircumferenceCm ?? size.chestCircumferenceCm * 0.9) - body.waistCircumferenceCm;
-  const hipEase = (size.hipCircumferenceCm ?? size.chestCircumferenceCm * 0.95) - body.hipCircumferenceCm;
   const thighEase = (size.thighCircumferenceCm ?? body.thighCircumferenceCm + 1) - body.thighCircumferenceCm;
-  const preferredTopLength = heightCm * 0.4;
-  const lengthEase = size.totalLengthCm - preferredTopLength;
+  const hipEase = (size.hipCircumferenceCm ?? size.chestCircumferenceCm * 0.95) - body.hipCircumferenceCm;
+  const lengthEase = size.totalLengthCm - body.totalLengthCm;
 
   const parts: PartFit[] = [
     { part: "어깨", easeCm: shoulderEase, status: statusByEase(shoulderEase), comment: "" },
     { part: "가슴", easeCm: chestEase, status: statusByEase(chestEase), comment: "" },
     { part: "허리", easeCm: waistEase, status: statusByEase(waistEase), comment: "" },
-    { part: "힙", easeCm: hipEase, status: statusByEase(hipEase), comment: "" },
     { part: "허벅지", easeCm: thighEase, status: statusByEase(thighEase), comment: "" },
+    { part: "힙", easeCm: hipEase, status: statusByEase(hipEase), comment: "" },
     { part: "총장", easeCm: lengthEase, status: statusByEase(lengthEase), comment: "" }
   ];
 
@@ -52,9 +51,9 @@ function score(parts: PartFit[]): number {
   }, 0);
 }
 
-export function analyzeAllSizes(body: EstimatedBodyMeasurements, product: ProductInfo, heightCm: number): AnalyzeResult {
+export function analyzeAllSizes(body: EstimatedBodyMeasurements, product: ProductInfo): AnalyzeResult {
   const analyses: SizeAnalysis[] = product.sizeTable.map((sizeRow) => {
-    const parts = bodyPartFits(body, sizeRow, heightCm);
+    const parts = bodyPartFits(body, sizeRow);
     return {
       size: sizeRow.size,
       highlights: buildHighlights(parts),
