@@ -72,7 +72,7 @@ export default function BodyStepForm() {
 
       saveBodyProfile({ heightCm, weightKg });
       saveBodyEstimation(json.data);
-      router.push("/product");
+      router.push("/body/result");
     } catch (err) {
       setError(err instanceof Error ? err.message : "오류가 발생했습니다.");
     } finally {
