@@ -224,11 +224,13 @@ export async function parseSizeChartWithClaude(
   if (!process.env.ANTHROPIC_API_KEY) return null;
 
   const truncatedHtml = html.slice(0, 120_000);
-  const prompt = `다음은 모드맨(Modoodman) 쇼핑몰 상품 페이지 HTML입니다. 사이즈표(단면 실측)를 찾아 JSON만 출력하세요.
+  const prompt = `다음은 모드맨(Modoodman) 쇼핑몰 상품 페이지 HTML입니다. 사이즈표를 찾아 JSON만 출력하세요.
 
 URL: ${url}
 
-모드맨은 옷을 바닥에 펼쳐 단면으로 재는 방식입니다. 표에 적힌 숫자는 단면 cm 값입니다.
+모드맨 측정 방식 (반드시 구분):
+1. 단면 실측 (바닥에 펼쳐 반쪽만 잰 값): 어깨, 가슴(Chest), 암홀, 허리, 허벅지, 밑단 등 → 표 숫자 그대로 입력 (×2 하지 말 것)
+2. 전체 길이 (단면 아님): totalLengthCm(총장/Length/Outseam Length), sleeveLengthCm(소매/팔길이) → 표 숫자 그대로 입력, ×2 또는 ÷2 절대 금지
 
 반드시 아래 형식:
 {
@@ -243,7 +245,7 @@ URL: ${url}
       "chestCircumferenceCm": 52.5,
       "armholeCm": 24,
       "sleeveLengthCm": 60,
-      "totalLengthCm": 69
+      "totalLengthCm": 61
     }
   ]
 }
@@ -252,7 +254,10 @@ URL: ${url}
 하의(bottom) 가능 항목: waistCircumferenceCm, thighCircumferenceCm, legOpeningCm, frontRiseCm, rearRiseCm, totalLengthCm
 
 규칙:
-- cm 단위 숫자만, 단면 실측값 그대로 (×2 하지 말 것)
+- 단면 항목(가슴/암홀/허리/허벅지/밑단): cm 단위 숫자만, 단면 실측값 그대로 (×2 하지 말 것)
+- totalLengthCm(총장): "총장", "Length", "Outseam Length" 열의 값만 사용. 옷 전체 세로 길이(보통 55~75cm)이며 단면이 아님
+- totalLengthCm에 "어깨+소매", "암홀", "가슴", "허벅지" 등 다른 열 값을 넣지 말 것 (20~35cm대 값은 총장이 아님)
+- sleeveLengthCm: "소매", "Sleeve", "팔길이" 열 값 그대로 (단면 아님, ×2/÷2 금지)
 - category는 사이즈표 항목으로 판별 (어깨/가슴/소매 → top, 허리/허벅지/밑단/밑위 → bottom)
 - measurementFields에는 실제로 파싱된 항목 키 나열
 - totalLengthCm은 가능하면 포함

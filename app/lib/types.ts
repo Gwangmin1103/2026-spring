@@ -59,6 +59,8 @@ export type ProductInfo = {
   url: string;
   productName: string;
   modelImageUrl?: string;
+  /** 상품 상세 이미지 URL 목록 (대표 이미지 포함) */
+  productImageUrls?: string[];
   sizeTable: ProductSizeRow[];
   parsingSource: "crawl" | "manual" | "ai";
   /** 파싱된 상품 카테고리 (없으면 실측 항목으로 추론) */

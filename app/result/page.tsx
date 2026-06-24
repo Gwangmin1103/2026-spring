@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import BodyMeasurementSummaryCard from "@/app/components/BodyMeasurementSummaryCard";
 import BodySilhouetteViewer from "@/app/components/BodySilhouetteViewer";
+import ProductImageGallery from "@/app/components/ProductImageGallery";
 import RecommendedSizeHero from "@/app/components/RecommendedSizeHero";
 import SizeComparisonTable from "@/app/components/SizeComparisonTable";
 import { estimateBodyFromProfile } from "@/app/lib/bodyEstimate";
@@ -91,6 +92,13 @@ export default function ResultPage() {
     [estimation, product, recommendedSize, heightCm]
   );
 
+  const productImageUrls = useMemo(() => {
+    if (!product) return [];
+    if (product.productImageUrls?.length) return product.productImageUrls;
+    if (product.modelImageUrl) return [product.modelImageUrl];
+    return [];
+  }, [product]);
+
   const onManualSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!manualSizeText.trim()) return;
@@ -134,6 +142,10 @@ export default function ResultPage() {
           ← 다시 입력
         </Link>
       </header>
+
+      {productImageUrls.length > 0 ? (
+        <ProductImageGallery imageUrls={productImageUrls} productName={product?.productName ?? "상품"} />
+      ) : null}
 
       <BodyMeasurementSummaryCard subtitle={subtitle} measurements={measurements} />
 

@@ -22,6 +22,48 @@ function detectModelImage($: cheerio.CheerioAPI): string | undefined {
   return $('meta[property="og:image"]').attr("content");
 }
 
+function resolveImageUrl(src: string, pageUrl: string): string | null {
+  const trimmed = src.trim();
+  if (!trimmed || trimmed.startsWith("data:") || /blank\.(gif|png)/i.test(trimmed)) return null;
+  try {
+    return new URL(trimmed, pageUrl).href;
+  } catch {
+    return null;
+  }
+}
+
+function detectProductImages($: cheerio.CheerioAPI, pageUrl: string): string[] {
+  const urls = new Set<string>();
+
+  const ogImage = detectModelImage($);
+  if (ogImage) {
+    const resolved = resolveImageUrl(ogImage, pageUrl);
+    if (resolved) urls.add(resolved);
+  }
+
+  const selectors = [
+    ".xans-product-image img",
+    ".xans-product-detail img",
+    ".prdImg img",
+    ".thumbnail img",
+    ".ThumbImage img",
+    "#prdDetail img",
+    ".detailArea img"
+  ];
+
+  for (const selector of selectors) {
+    $(selector).each((_, el) => {
+      const raw =
+        $(el).attr("src") ?? $(el).attr("data-src") ?? $(el).attr("data-original") ?? $(el).attr("ec-data-src");
+      if (!raw) return;
+      const resolved = resolveImageUrl(raw, pageUrl);
+      if (resolved) urls.add(resolved);
+    });
+  }
+
+  return [...urls];
+}
+
 function parseNumber(value: string): number | null {
   const match = value.replace(",", ".").match(/-?\d+(\.\d+)?/);
   if (!match) return null;
@@ -115,7 +157,14 @@ export async function parseProduct(
   }
 
   const aiParsed = await parseSizeChartWithClaude(url, html, productName);
-  if (aiParsed) return aiParsed;
+  if (aiParsed) {
+    const productImageUrls = detectProductImages($, url);
+    return {
+      ...aiParsed,
+      modelImageUrl: aiParsed.modelImageUrl ?? detectModelImage($),
+      productImageUrls: productImageUrls.length > 0 ? productImageUrls : undefined
+    };
+  }
 
   throw new Error("사이즈표를 찾지 못했습니다. 수동 입력을 사용해주세요.");
 }
