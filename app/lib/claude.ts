@@ -173,11 +173,18 @@ function inferFieldsFromRow(row: ClaudeSizeChartResponse["sizeTable"][number]): 
   return fields;
 }
 
+const MIN_TOTAL_LENGTH_CM = 45;
+
+function sanitizeTotalLengthCm(value: number | undefined): number | undefined {
+  if (value === undefined || Number.isNaN(value)) return undefined;
+  if (value < MIN_TOTAL_LENGTH_CM) return undefined;
+  return value;
+}
+
 function normalizeSizeRows(rows: ClaudeSizeChartResponse["sizeTable"]): ProductSizeRow[] {
   const result: ProductSizeRow[] = [];
   for (const row of rows) {
-    const totalLength = row.totalLengthCm;
-    if (totalLength === undefined) continue;
+    const totalLength = sanitizeTotalLengthCm(row.totalLengthCm);
 
     const hasTop = row.shoulderWidthCm !== undefined || row.chestCircumferenceCm !== undefined || row.sleeveLengthCm !== undefined;
     const hasBottom =
@@ -189,7 +196,7 @@ function normalizeSizeRows(rows: ClaudeSizeChartResponse["sizeTable"]): ProductS
 
     if (!hasTop && !hasBottom) continue;
 
-    result.push({
+    const normalizedRow = {
       size: String(row.size).trim(),
       shoulderWidthCm: row.shoulderWidthCm,
       chestCircumferenceCm: row.chestCircumferenceCm,
@@ -201,8 +208,10 @@ function normalizeSizeRows(rows: ClaudeSizeChartResponse["sizeTable"]): ProductS
       frontRiseCm: row.frontRiseCm,
       rearRiseCm: row.rearRiseCm,
       sleeveLengthCm: row.sleeveLengthCm,
-      totalLengthCm: totalLength
-    });
+      ...(totalLength !== undefined ? { totalLengthCm: totalLength } : {})
+    };
+
+    result.push(normalizedRow as ProductSizeRow);
   }
   return result;
 }
@@ -232,6 +241,13 @@ URL: ${url}
 1. 단면 실측 (바닥에 펼쳐 반쪽만 잰 값): 어깨, 가슴(Chest), 암홀, 허리, 허벅지, 밑단 등 → 표 숫자 그대로 입력 (×2 하지 말 것)
 2. 전체 길이 (단면 아님): totalLengthCm(총장/Length/Outseam Length), sleeveLengthCm(소매/팔길이) → 표 숫자 그대로 입력, ×2 또는 ÷2 절대 금지
 
+totalLengthCm(총장) 상세 규칙:
+- 총장(Length, 총장, Outseam Length)은 옷을 세워서 잰 전체 길이이며, 단면 실측이 아님 → 절대 ×2 또는 ÷2 하지 말 것
+- 상의: 보통 50~85cm / 코트·아우터: 최대 120cm / 바지(하의): 90~120cm 범위
+- "총장", "Length", "Outseam Length" 열의 값만 totalLengthCm에 사용
+- "어깨+소매", "암홀", "가슴", "허벅지" 등 다른 열 값을 totalLengthCm에 넣지 말 것
+- 45cm 미만(예: 26cm)은 총장이 아니므로 totalLengthCm을 null로 두거나 생략
+
 반드시 아래 형식:
 {
   "category": "top" | "bottom",
@@ -255,8 +271,7 @@ URL: ${url}
 
 규칙:
 - 단면 항목(가슴/암홀/허리/허벅지/밑단): cm 단위 숫자만, 단면 실측값 그대로 (×2 하지 말 것)
-- totalLengthCm(총장): "총장", "Length", "Outseam Length" 열의 값만 사용. 옷 전체 세로 길이(보통 55~75cm)이며 단면이 아님
-- totalLengthCm에 "어깨+소매", "암홀", "가슴", "허벅지" 등 다른 열 값을 넣지 말 것 (20~35cm대 값은 총장이 아님)
+- totalLengthCm(총장): 위 totalLengthCm 상세 규칙 준수. 표에 적힌 전체 길이 그대로 (×2/÷2 금지)
 - sleeveLengthCm: "소매", "Sleeve", "팔길이" 열 값 그대로 (단면 아님, ×2/÷2 금지)
 - category는 사이즈표 항목으로 판별 (어깨/가슴/소매 → top, 허리/허벅지/밑단/밑위 → bottom)
 - measurementFields에는 실제로 파싱된 항목 키 나열
