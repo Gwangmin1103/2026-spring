@@ -1,10 +1,13 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { estimateBodyFromProfile } from "./bodyEstimate";
+import { extractModoodmanProductMetaFromPage } from "./productMeta";
 import { BodyEstimationResult, BodyProfileInput, ProductInfo, ProductSizeRow, SizeAnalysis } from "./types";
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY
-});
+function getAnthropicClient(): Anthropic | null {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return null;
+  return new Anthropic({ apiKey });
+}
 
 type CreateFinalFitCommentParams = {
   bodyEstimation: BodyEstimationResult;
@@ -14,13 +17,19 @@ type CreateFinalFitCommentParams = {
 };
 
 export async function estimateBodyFromPhotos(input: BodyProfileInput): Promise<BodyEstimationResult> {
-  if (!process.env.ANTHROPIC_API_KEY || !input.fullBodyImageBase64) {
-    return estimateBodyFromProfile({
+  const profileFallback = () =>
+    estimateBodyFromProfile({
       heightCm: input.heightCm,
       weightKg: input.weightKg,
       gender: input.gender ?? "male"
     });
+
+  if (!process.env.ANTHROPIC_API_KEY || !input.fullBodyImageBase64) {
+    return profileFallback();
   }
+
+  const anthropic = getAnthropicClient();
+  if (!anthropic) return profileFallback();
 
   const content: Anthropic.Messages.MessageParam["content"] = [
     {
@@ -63,39 +72,43 @@ export async function estimateBodyFromPhotos(input: BodyProfileInput): Promise<B
     });
   }
 
-  const response = await anthropic.messages.create({
-    model: "claude-3-5-sonnet-20241022",
-    max_tokens: 500,
-    messages: [{ role: "user", content }]
-  });
+  try {
+    const response = await anthropic.messages.create({
+      model: "claude-3-5-sonnet-20241022",
+      max_tokens: 500,
+      messages: [{ role: "user", content }]
+    });
 
-  const first = response.content[0];
-  if (!first || first.type !== "text") throw new Error("Vision 응답 파싱 실패");
-  const parsed = JSON.parse(first.text) as {
-    shoulderWidthCm: number;
-    chestCircumferenceCm: number;
-    waistCircumferenceCm: number;
-    thighCircumferenceCm: number;
-    hipCircumferenceCm: number;
-    totalLengthCm: number;
-    sleeveLengthCm: number;
-    confidence: "low" | "medium" | "high";
-    note: string;
-  };
+    const first = response.content[0];
+    if (!first || first.type !== "text") return profileFallback();
+    const parsed = JSON.parse(first.text) as {
+      shoulderWidthCm: number;
+      chestCircumferenceCm: number;
+      waistCircumferenceCm: number;
+      thighCircumferenceCm: number;
+      hipCircumferenceCm: number;
+      totalLengthCm: number;
+      sleeveLengthCm: number;
+      confidence: "low" | "medium" | "high";
+      note: string;
+    };
 
-  return {
-    estimated: {
-      shoulderWidthCm: parsed.shoulderWidthCm,
-      chestCircumferenceCm: parsed.chestCircumferenceCm,
-      waistCircumferenceCm: parsed.waistCircumferenceCm,
-      thighCircumferenceCm: parsed.thighCircumferenceCm,
-      hipCircumferenceCm: parsed.hipCircumferenceCm,
-      totalLengthCm: parsed.totalLengthCm,
-      sleeveLengthCm: parsed.sleeveLengthCm
-    },
-    confidence: parsed.confidence,
-    note: parsed.note
-  };
+    return {
+      estimated: {
+        shoulderWidthCm: parsed.shoulderWidthCm,
+        chestCircumferenceCm: parsed.chestCircumferenceCm,
+        waistCircumferenceCm: parsed.waistCircumferenceCm,
+        thighCircumferenceCm: parsed.thighCircumferenceCm,
+        hipCircumferenceCm: parsed.hipCircumferenceCm,
+        totalLengthCm: parsed.totalLengthCm,
+        sleeveLengthCm: parsed.sleeveLengthCm
+      },
+      confidence: parsed.confidence,
+      note: parsed.note
+    };
+  } catch {
+    return profileFallback();
+  }
 }
 
 export async function createFinalFitComment({
@@ -105,6 +118,11 @@ export async function createFinalFitComment({
   recommendedSize
 }: CreateFinalFitCommentParams): Promise<string> {
   if (!process.env.ANTHROPIC_API_KEY) {
+    return `${recommendedSize} 사이즈를 추천합니다. 어깨와 가슴 중심으로 밸런스가 가장 좋고 총장도 안정적입니다.`;
+  }
+
+  const anthropic = getAnthropicClient();
+  if (!anthropic) {
     return `${recommendedSize} 사이즈를 추천합니다. 어깨와 가슴 중심으로 밸런스가 가장 좋고 총장도 안정적입니다.`;
   }
 
@@ -126,15 +144,20 @@ ${JSON.stringify(analyses, null, 2)}
 ${recommendedSize}
 `;
 
-  const response = await anthropic.messages.create({
-    model: "claude-3-5-sonnet-20241022",
-    max_tokens: 300,
-    messages: [{ role: "user", content: prompt }]
-  });
+  try {
+    const response = await anthropic.messages.create({
+      model: "claude-3-5-sonnet-20241022",
+      max_tokens: 300,
+      messages: [{ role: "user", content: prompt }]
+    });
 
-  const first = response.content[0];
-  if (first && first.type === "text") return first.text;
-  return "핏 분석 문장을 생성하지 못했습니다.";
+    const first = response.content[0];
+    if (first && first.type === "text") return first.text;
+  } catch {
+    // fall through to default comment
+  }
+
+  return `${recommendedSize} 사이즈를 추천합니다. 어깨와 가슴 중심으로 밸런스가 가장 좋고 총장도 안정적입니다.`;
 }
 
 type ClaudeSizeChartResponse = {
@@ -229,55 +252,8 @@ export async function extractModoodmanProductMeta(
   url: string,
   html: string,
   fallbackName: string
-): Promise<{ productName?: string; modelImageUrl?: string; productImageUrls?: string[] } | null> {
-  if (!process.env.ANTHROPIC_API_KEY) return null;
-
-  const truncatedHtml = html.slice(0, 80_000);
-  const prompt = `다음은 모드맨(Modoodman) 쇼핑몰 상품 페이지 HTML입니다. 상품명과 상품 이미지 URL만 추출해 JSON만 출력하세요.
-사이즈표 숫자는 추출하지 마세요.
-
-URL: ${url}
-
-반드시 아래 형식:
-{
-  "productName": "상품명",
-  "modelImageUrl": "대표 이미지 URL",
-  "productImageUrls": ["상품 이미지 URL", "..."]
-}
-
-규칙:
-- productName은 페이지의 실제 상품명
-- modelImageUrl은 og:image 또는 대표 상품 이미지
-- productImageUrls는 상품 상세/썸네일 이미지 URL 목록 (중복 제거)
-- 찾을 수 없는 필드는 생략
-
-HTML:
-${truncatedHtml}`;
-
-  const response = await anthropic.messages.create({
-    model: "claude-3-5-sonnet-20241022",
-    max_tokens: 800,
-    messages: [{ role: "user", content: prompt }]
-  });
-
-  const first = response.content[0];
-  if (!first || first.type !== "text") return null;
-
-  try {
-    const parsed = JSON.parse(extractJson(first.text)) as {
-      productName?: string;
-      modelImageUrl?: string;
-      productImageUrls?: string[];
-    };
-
-    return {
-      productName: parsed.productName?.trim() || fallbackName,
-      modelImageUrl: parsed.modelImageUrl?.trim() || undefined,
-      productImageUrls: parsed.productImageUrls?.filter(Boolean)
-    };
-  } catch {
-    return null;
-  }
+): Promise<{ productName?: string; modelImageUrl?: string; productImageUrls?: string[] }> {
+  return extractModoodmanProductMetaFromPage(url, html, fallbackName);
 }
 
 export async function parseSizeChartWithClaude(
@@ -286,6 +262,9 @@ export async function parseSizeChartWithClaude(
   productName: string
 ): Promise<ProductInfo | null> {
   if (!process.env.ANTHROPIC_API_KEY) return null;
+
+  const anthropic = getAnthropicClient();
+  if (!anthropic) return null;
 
   const truncatedHtml = html.slice(0, 120_000);
   const prompt = `다음은 모드맨(Modoodman) 쇼핑몰 상품 페이지 HTML입니다. 사이즈표를 찾아 JSON만 출력하세요.
