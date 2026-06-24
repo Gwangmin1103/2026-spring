@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import BodyMeasurementSummaryCard from "@/app/components/BodyMeasurementSummaryCard";
 import BodySilhouetteViewer from "@/app/components/BodySilhouetteViewer";
 import ProductImageGallery from "@/app/components/ProductImageGallery";
+import OutfitShotLinks from "@/app/components/OutfitShotLinks";
 import RecommendedSizeHero from "@/app/components/RecommendedSizeHero";
 import SizeComparisonTable from "@/app/components/SizeComparisonTable";
 import { estimateBodyFromProfile } from "@/app/lib/bodyEstimate";
@@ -146,6 +147,8 @@ export default function ResultPage() {
       {productImageUrls.length > 0 ? (
         <ProductImageGallery imageUrls={productImageUrls} productName={product?.productName ?? "상품"} />
       ) : null}
+
+      {product ? <OutfitShotLinks productName={product.productName} /> : null}
 
       <BodyMeasurementSummaryCard subtitle={subtitle} measurements={measurements} />
 

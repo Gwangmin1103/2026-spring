@@ -1,9 +1,10 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useMemo, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { saveNamedProfile } from "@/app/lib/namedProfileStorage";
 import { Gender, ReferenceObjectSpec, ReferenceObjectType } from "@/app/lib/types";
-import { saveSession } from "@/app/lib/storage";
+import { saveSession, StoredProfile } from "@/app/lib/storage";
 
 const OBJECTS: ReferenceObjectSpec[] = [
   { type: "bottle500", label: "500ml 페트병", dimensionsMm: "높이 200mm / 지름 65mm" },
@@ -20,17 +21,30 @@ function toBase64(file: File): Promise<string> {
   });
 }
 
-export default function BodyStepForm() {
+export default function BodyStepForm({
+  profileName = "",
+  prefillProfile
+}: {
+  profileName?: string;
+  prefillProfile?: StoredProfile;
+}) {
   const router = useRouter();
-  const [heightCm, setHeightCm] = useState(175);
-  const [weightKg, setWeightKg] = useState(70);
-  const [gender, setGender] = useState<Gender>("male");
+  const [heightCm, setHeightCm] = useState(prefillProfile?.heightCm ?? 175);
+  const [weightKg, setWeightKg] = useState(prefillProfile?.weightKg ?? 70);
+  const [gender, setGender] = useState<Gender>(prefillProfile?.gender ?? "male");
   const [fullBodyFile, setFullBodyFile] = useState<File | null>(null);
   const [referenceType, setReferenceType] = useState<ReferenceObjectType | undefined>();
   const [referenceFile, setReferenceFile] = useState<File | null>(null);
   const [productUrl, setProductUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!prefillProfile) return;
+    setHeightCm(prefillProfile.heightCm);
+    setWeightKg(prefillProfile.weightKg);
+    setGender(prefillProfile.gender);
+  }, [prefillProfile]);
 
   const selectedLabel = useMemo(
     () => OBJECTS.find((x) => x.type === referenceType)?.label ?? "선택 안 함",
@@ -70,6 +84,7 @@ export default function BodyStepForm() {
         referenceImageBase64,
         productUrl: productUrl.trim()
       });
+      saveNamedProfile(profileName, { heightCm, weightKg, gender });
       router.push("/result");
     } catch {
       setError("데이터 저장 중 오류가 발생했습니다.");

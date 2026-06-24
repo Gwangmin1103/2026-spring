@@ -1,4 +1,4 @@
-import BodyStepForm from "@/app/components/BodyStepForm";
+import BodyPageContent from "@/app/components/BodyPageContent";
 
 export default function BodyPage() {
   return (
@@ -9,7 +9,7 @@ export default function BodyPage() {
           신체 정보와 상품 링크를 입력하면 실측 사이즈와 비교해 핏을 분석합니다.
         </p>
       </header>
-      <BodyStepForm />
+      <BodyPageContent />
     </main>
   );
 }
