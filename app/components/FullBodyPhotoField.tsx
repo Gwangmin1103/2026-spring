@@ -2,16 +2,8 @@
 
 import { ChangeEvent, useEffect, useState } from "react";
 import { saveNamedFullBodyPhoto } from "@/app/lib/namedProfileStorage";
+import { compressImageToBase64 } from "@/app/lib/imageCompress";
 import { StoredProfile } from "@/app/lib/storage";
-
-function toBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result).split(",")[1] ?? "");
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
 
 type FullBodyPhotoFieldProps = {
   profileName?: string;
@@ -51,7 +43,7 @@ export default function FullBodyPhotoField({
       return;
     }
 
-    const base64 = await toBase64(file);
+    const base64 = await compressImageToBase64(file);
     setPreviewUrl(`data:image/jpeg;base64,${base64}`);
     onLoadedBase64Change(base64);
 

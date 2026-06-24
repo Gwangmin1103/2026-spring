@@ -4,6 +4,7 @@ import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveNamedProfile } from "@/app/lib/namedProfileStorage";
 import FullBodyPhotoField from "@/app/components/FullBodyPhotoField";
+import { compressImageToBase64 } from "@/app/lib/imageCompress";
 import { Gender, ReferenceObjectSpec, ReferenceObjectType } from "@/app/lib/types";
 import { saveSession, StoredProfile } from "@/app/lib/storage";
 
@@ -78,16 +79,29 @@ export default function BodyStepForm({
 
     try {
       setLoading(true);
-      const fullBodyImageBase64 = fullBodyFile ? await toBase64(fullBodyFile) : loadedFullBodyBase64!;
+      const fullBodyImageBase64 = fullBodyFile
+        ? await compressImageToBase64(fullBodyFile)
+        : loadedFullBodyBase64!;
       const referenceImageBase64 = referenceFile ? await toBase64(referenceFile) : undefined;
 
-      saveSession({
+      const session = {
         profile: { heightCm, weightKg, gender },
         fullBodyImageBase64,
         referenceObjectType: referenceType,
         referenceImageBase64,
         productUrl: productUrl.trim()
-      });
+      };
+
+      try {
+        saveSession(session);
+      } catch {
+        saveSession({
+          profile: session.profile,
+          fullBodyImageBase64: "",
+          productUrl: session.productUrl
+        });
+      }
+
       saveNamedProfile(profileName, { heightCm, weightKg, gender, fullBodyImageBase64 });
       router.push("/result");
     } catch {

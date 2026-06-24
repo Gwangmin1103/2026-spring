@@ -19,8 +19,22 @@ function readStore(): NamedProfilesStore {
   }
 }
 
-function writeStore(store: NamedProfilesStore) {
-  localStorage.setItem(NAMED_PROFILES_KEY, JSON.stringify(store));
+function writeStore(store: NamedProfilesStore): boolean {
+  try {
+    localStorage.setItem(NAMED_PROFILES_KEY, JSON.stringify(store));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function persistRecord(name: string, record: NamedProfileRecord) {
+  const store = readStore();
+
+  if (writeStore({ ...store, [name]: record })) return;
+
+  const { fullBodyImageBase64: _photo, ...profileWithoutPhoto } = record;
+  writeStore({ ...store, [name]: profileWithoutPhoto });
 }
 
 export function loadNamedProfile(name: string): NamedProfileRecord | null {
@@ -34,11 +48,10 @@ export function saveNamedProfile(name: string, profile: NamedProfileRecord) {
   if (!trimmed) return;
 
   const store = readStore();
-  store[trimmed] = {
+  persistRecord(trimmed, {
     ...store[trimmed],
     ...profile
-  };
-  writeStore(store);
+  });
 }
 
 export function saveNamedFullBodyPhoto(name: string, fullBodyImageBase64: string, profile?: StoredProfile) {
@@ -46,10 +59,9 @@ export function saveNamedFullBodyPhoto(name: string, fullBodyImageBase64: string
   if (!trimmed || !fullBodyImageBase64) return;
 
   const store = readStore();
-  store[trimmed] = {
+  persistRecord(trimmed, {
     ...store[trimmed],
     ...profile,
     fullBodyImageBase64
-  };
-  writeStore(store);
+  });
 }
