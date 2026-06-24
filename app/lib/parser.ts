@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
-import { parseSizeChartWithClaude } from "./claude";
+import { extractModoodmanProductMeta, parseSizeChartWithClaude } from "./claude";
+import { isModoodmanUrl, parseModoodmanSizeChart } from "./modoodmanParser";
 import { ProductInfo, ProductSizeRow } from "./types";
 
 function parsePlatform(url: string): string {
@@ -131,19 +132,9 @@ export async function parseProduct(
 ): Promise<ProductInfo> {
   const $ = cheerio.load(html);
   const productName = detectProductName($);
-  const parsedRows = parseHtmlSizeTable($);
+  const modelImageUrl = detectModelImage($);
+  const productImageUrls = detectProductImages($, url);
   const manualRows = manualSizeText ? parseManualSizeText(manualSizeText) : [];
-
-  if (parsedRows.length > 0) {
-    return {
-      platform: parsePlatform(url),
-      url,
-      productName,
-      modelImageUrl: detectModelImage($),
-      sizeTable: parsedRows,
-      parsingSource: "crawl"
-    };
-  }
 
   if (manualRows.length > 0) {
     return {
@@ -156,9 +147,44 @@ export async function parseProduct(
     };
   }
 
+  if (isModoodmanUrl(url)) {
+    const modoodmanChart = parseModoodmanSizeChart($);
+    if (modoodmanChart && modoodmanChart.sizeTable.length > 0) {
+      const aiMeta = await extractModoodmanProductMeta(url, html, productName);
+
+      return {
+        platform: "modoodman",
+        url,
+        productName: aiMeta?.productName ?? productName,
+        modelImageUrl: aiMeta?.modelImageUrl ?? modelImageUrl,
+        productImageUrls: aiMeta?.productImageUrls?.length
+          ? aiMeta.productImageUrls
+          : productImageUrls.length > 0
+            ? productImageUrls
+            : undefined,
+        sizeTable: modoodmanChart.sizeTable,
+        parsingSource: "crawl",
+        category: modoodmanChart.category,
+        measurementFields: modoodmanChart.measurementFields
+      };
+    }
+  }
+
+  const parsedRows = parseHtmlSizeTable($);
+
+  if (parsedRows.length > 0) {
+    return {
+      platform: parsePlatform(url),
+      url,
+      productName,
+      modelImageUrl: detectModelImage($),
+      sizeTable: parsedRows,
+      parsingSource: "crawl"
+    };
+  }
+
   const aiParsed = await parseSizeChartWithClaude(url, html, productName);
   if (aiParsed) {
-    const productImageUrls = detectProductImages($, url);
     return {
       ...aiParsed,
       modelImageUrl: aiParsed.modelImageUrl ?? detectModelImage($),

@@ -225,6 +225,61 @@ function extractJson(text: string): string {
   return text.trim();
 }
 
+export async function extractModoodmanProductMeta(
+  url: string,
+  html: string,
+  fallbackName: string
+): Promise<{ productName?: string; modelImageUrl?: string; productImageUrls?: string[] } | null> {
+  if (!process.env.ANTHROPIC_API_KEY) return null;
+
+  const truncatedHtml = html.slice(0, 80_000);
+  const prompt = `다음은 모드맨(Modoodman) 쇼핑몰 상품 페이지 HTML입니다. 상품명과 상품 이미지 URL만 추출해 JSON만 출력하세요.
+사이즈표 숫자는 추출하지 마세요.
+
+URL: ${url}
+
+반드시 아래 형식:
+{
+  "productName": "상품명",
+  "modelImageUrl": "대표 이미지 URL",
+  "productImageUrls": ["상품 이미지 URL", "..."]
+}
+
+규칙:
+- productName은 페이지의 실제 상품명
+- modelImageUrl은 og:image 또는 대표 상품 이미지
+- productImageUrls는 상품 상세/썸네일 이미지 URL 목록 (중복 제거)
+- 찾을 수 없는 필드는 생략
+
+HTML:
+${truncatedHtml}`;
+
+  const response = await anthropic.messages.create({
+    model: "claude-3-5-sonnet-20241022",
+    max_tokens: 800,
+    messages: [{ role: "user", content: prompt }]
+  });
+
+  const first = response.content[0];
+  if (!first || first.type !== "text") return null;
+
+  try {
+    const parsed = JSON.parse(extractJson(first.text)) as {
+      productName?: string;
+      modelImageUrl?: string;
+      productImageUrls?: string[];
+    };
+
+    return {
+      productName: parsed.productName?.trim() || fallbackName,
+      modelImageUrl: parsed.modelImageUrl?.trim() || undefined,
+      productImageUrls: parsed.productImageUrls?.filter(Boolean)
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function parseSizeChartWithClaude(
   url: string,
   html: string,
