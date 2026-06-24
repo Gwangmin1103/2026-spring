@@ -8,7 +8,9 @@ import { StoredProfile } from "@/app/lib/storage";
 
 export default function BodyPageContent() {
   const [profileName, setProfileName] = useState("");
+  const [loadKey, setLoadKey] = useState(0);
   const [prefillProfile, setPrefillProfile] = useState<StoredProfile | null>(null);
+  const [prefillFullBodyImageBase64, setPrefillFullBodyImageBase64] = useState<string | undefined>();
   const [loadMessage, setLoadMessage] = useState<string | null>(null);
 
   const handleLoad = () => {
@@ -19,6 +21,8 @@ export default function BodyPageContent() {
     }
 
     setPrefillProfile(profile);
+    setPrefillFullBodyImageBase64(profile.fullBodyImageBase64);
+    setLoadKey((key) => key + 1);
     setLoadMessage(`${profileName.trim()}님의 신체 정보를 불러왔습니다.`);
   };
 
@@ -33,7 +37,12 @@ export default function BodyPageContent() {
         onLoad={handleLoad}
         loadMessage={loadMessage}
       />
-      <BodyStepForm profileName={profileName} prefillProfile={prefillProfile ?? undefined} />
+      <BodyStepForm
+        key={loadKey}
+        profileName={profileName}
+        prefillProfile={prefillProfile ?? undefined}
+        prefillFullBodyImageBase64={prefillFullBodyImageBase64}
+      />
     </div>
   );
 }

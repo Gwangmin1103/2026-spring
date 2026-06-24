@@ -3,6 +3,7 @@
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveNamedProfile } from "@/app/lib/namedProfileStorage";
+import FullBodyPhotoField from "@/app/components/FullBodyPhotoField";
 import { Gender, ReferenceObjectSpec, ReferenceObjectType } from "@/app/lib/types";
 import { saveSession, StoredProfile } from "@/app/lib/storage";
 
@@ -23,16 +24,19 @@ function toBase64(file: File): Promise<string> {
 
 export default function BodyStepForm({
   profileName = "",
-  prefillProfile
+  prefillProfile,
+  prefillFullBodyImageBase64
 }: {
   profileName?: string;
   prefillProfile?: StoredProfile;
+  prefillFullBodyImageBase64?: string;
 }) {
   const router = useRouter();
   const [heightCm, setHeightCm] = useState(prefillProfile?.heightCm ?? 175);
   const [weightKg, setWeightKg] = useState(prefillProfile?.weightKg ?? 70);
   const [gender, setGender] = useState<Gender>(prefillProfile?.gender ?? "male");
   const [fullBodyFile, setFullBodyFile] = useState<File | null>(null);
+  const [loadedFullBodyBase64, setLoadedFullBodyBase64] = useState<string | undefined>();
   const [referenceType, setReferenceType] = useState<ReferenceObjectType | undefined>();
   const [referenceFile, setReferenceFile] = useState<File | null>(null);
   const [productUrl, setProductUrl] = useState("");
@@ -59,7 +63,7 @@ export default function BodyStepForm({
     e.preventDefault();
     setError(null);
 
-    if (!fullBodyFile) {
+    if (!fullBodyFile && !loadedFullBodyBase64) {
       setError("전신 사진을 업로드해주세요.");
       return;
     }
@@ -74,7 +78,7 @@ export default function BodyStepForm({
 
     try {
       setLoading(true);
-      const fullBodyImageBase64 = await toBase64(fullBodyFile);
+      const fullBodyImageBase64 = fullBodyFile ? await toBase64(fullBodyFile) : loadedFullBodyBase64!;
       const referenceImageBase64 = referenceFile ? await toBase64(referenceFile) : undefined;
 
       saveSession({
@@ -84,7 +88,7 @@ export default function BodyStepForm({
         referenceImageBase64,
         productUrl: productUrl.trim()
       });
-      saveNamedProfile(profileName, { heightCm, weightKg, gender });
+      saveNamedProfile(profileName, { heightCm, weightKg, gender, fullBodyImageBase64 });
       router.push("/result");
     } catch {
       setError("데이터 저장 중 오류가 발생했습니다.");
@@ -102,12 +106,13 @@ export default function BodyStepForm({
             <p className="text-sm text-slate-600">전신 사진과 기본 정보를 입력하세요.</p>
           </div>
 
-          <label className="block space-y-1 text-sm">
-            <span className="font-medium">
-              전신 사진 업로드 <span className="text-rose-500">*</span>
-            </span>
-            <input type="file" accept="image/*" required onChange={onFile(setFullBodyFile)} className="w-full text-sm" />
-          </label>
+          <FullBodyPhotoField
+            profileName={profileName}
+            profileSnapshot={{ heightCm, weightKg, gender }}
+            prefillFullBodyImageBase64={prefillFullBodyImageBase64}
+            onFileChange={setFullBodyFile}
+            onLoadedBase64Change={setLoadedFullBodyBase64}
+          />
 
           <div className="space-y-2">
             <span className="text-sm font-medium">기준 물체 선택 (선택)</span>
