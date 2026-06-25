@@ -1,5 +1,11 @@
-const DEFAULT_MAX_SIZE = 800;
-const DEFAULT_QUALITY = 0.7;
+const DEFAULT_MAX_SIZE = 600;
+const DEFAULT_QUALITY = 0.5;
+const MAX_BASE64_BYTES = 3 * 1024 * 1024;
+
+function getBase64ByteSize(base64: string): number {
+  const padding = base64.endsWith("==") ? 2 : base64.endsWith("=") ? 1 : 0;
+  return Math.floor((base64.length * 3) / 4) - padding;
+}
 
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -53,6 +59,11 @@ export async function compressImageToBase64(
   }
 
   context.drawImage(image, 0, 0, width, height);
-  const compressed = canvas.toDataURL("image/jpeg", quality);
-  return compressed.split(",")[1] ?? "";
+  let base64 = canvas.toDataURL("image/jpeg", quality).split(",")[1] ?? "";
+
+  if (getBase64ByteSize(base64) > MAX_BASE64_BYTES) {
+    base64 = canvas.toDataURL("image/jpeg", 0.3).split(",")[1] ?? "";
+  }
+
+  return base64;
 }
