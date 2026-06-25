@@ -81,7 +81,9 @@ export async function estimateBodyFromPhotos(input: BodyProfileInput): Promise<B
 
     const first = response.content[0];
     if (!first || first.type !== "text") return profileFallback();
-    const parsed = JSON.parse(first.text) as {
+    console.log("Claude 응답:", first.text);
+    const cleaned = first.text.replace(/```json|```/g, "").trim();
+    const parsed = JSON.parse(cleaned) as {
       shoulderWidthCm: number;
       chestCircumferenceCm: number;
       waistCircumferenceCm: number;
@@ -106,7 +108,8 @@ export async function estimateBodyFromPhotos(input: BodyProfileInput): Promise<B
       confidence: parsed.confidence,
       note: parsed.note
     };
-  } catch {
+  } catch (error) {
+    console.error("estimateBodyFromPhotos 실패:", error);
     return profileFallback();
   }
 }
