@@ -47,6 +47,7 @@ export async function estimateBodyFromPhotos(input: BodyProfileInput): Promise<B
   "confidence": "low" | "medium" | "high",
   "note": "string"
 }
+totalLengthCm: 어깨 끝에서 옷 밑단까지의 길이 (단위: cm). 절대 키와 혼동하지 말 것. 상의 기준 보통 55~75cm, 아우터 기준 70~110cm.
 키: ${input.heightCm}cm
 몸무게: ${input.weightKg}kg
 기준 물체: ${input.referenceObjectType ?? "없음"}`
