@@ -78,10 +78,38 @@ export default function ResultPage() {
     setSubtitle(formatProfileSubtitle(session.profile));
     setHeightCm(session.profile.heightCm);
     setManualSizeText(session.manualSizeText ?? "");
-    const bodyResult = session.isDemoMode
-      ? DEMO_BODY_ESTIMATION
-      : estimateBodyFromProfile(session.profile);
-    setEstimation(bodyResult);
+
+    const resolveBodyEstimation = async (): Promise<BodyEstimationResult> => {
+      if (session.isDemoMode) {
+        return DEMO_BODY_ESTIMATION;
+      }
+
+      if (session.fullBodyImageBase64) {
+        try {
+          const res = await fetch("/api/body-estimate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              heightCm: session.profile.heightCm,
+              weightKg: session.profile.weightKg,
+              gender: session.profile.gender,
+              fullBodyImageBase64: session.fullBodyImageBase64,
+              referenceObjectType: session.referenceObjectType
+            })
+          });
+          const json = await res.json();
+          if (res.ok && json.success) {
+            return json.data as BodyEstimationResult;
+          }
+        } catch {
+          // fall through to profile fallback
+        }
+      }
+
+      return estimateBodyFromProfile(session.profile);
+    };
+
+    void resolveBodyEstimation().then(setEstimation);
 
     fetchProduct(session.productUrl, session.manualSizeText)
       .then(setProduct)

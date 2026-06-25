@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { estimateBodyFromProfile } from "@/app/lib/bodyEstimate";
+import { estimateBodyFromPhotos } from "@/app/lib/claude";
 import { BodyProfileInput, Gender } from "@/app/lib/types";
 
 function parseGender(value: unknown): Gender | null {
@@ -22,7 +23,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "성별(남/여)을 선택해주세요." }, { status: 400 });
     }
 
-    const result = estimateBodyFromProfile({ heightCm, weightKg, gender });
+    const profileInput: BodyProfileInput = {
+      heightCm,
+      weightKg,
+      gender,
+      fullBodyImageBase64: payload.fullBodyImageBase64,
+      referenceObjectType: payload.referenceObjectType,
+      referenceImageBase64: payload.referenceImageBase64
+    };
+
+    const result = payload.fullBodyImageBase64
+      ? await estimateBodyFromPhotos(profileInput)
+      : estimateBodyFromProfile({ heightCm, weightKg, gender });
 
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
