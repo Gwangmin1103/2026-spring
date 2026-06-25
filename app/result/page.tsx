@@ -30,6 +30,20 @@ const LEGEND: { verdict: FitVerdict; description: string }[] = [
   { verdict: "LOOSE", description: "차이 6cm 초과" }
 ];
 
+const DEMO_BODY_ESTIMATION: BodyEstimationResult = {
+  estimated: {
+    shoulderWidthCm: 44,
+    chestCircumferenceCm: 97,
+    waistCircumferenceCm: 80,
+    thighCircumferenceCm: 55,
+    hipCircumferenceCm: 92,
+    totalLengthCm: 67,
+    sleeveLengthCm: 58
+  },
+  confidence: "high",
+  note: "데모 데이터 (실제 측정값 기반)"
+};
+
 export default function ResultPage() {
   const router = useRouter();
   const [estimation, setEstimation] = useState<BodyEstimationResult | null>(null);
@@ -64,7 +78,9 @@ export default function ResultPage() {
     setSubtitle(formatProfileSubtitle(session.profile));
     setHeightCm(session.profile.heightCm);
     setManualSizeText(session.manualSizeText ?? "");
-    const bodyResult = estimateBodyFromProfile(session.profile);
+    const bodyResult = session.isDemoMode
+      ? DEMO_BODY_ESTIMATION
+      : estimateBodyFromProfile(session.profile);
     setEstimation(bodyResult);
 
     fetchProduct(session.productUrl, session.manualSizeText)

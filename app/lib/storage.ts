@@ -17,6 +17,7 @@ export type StoredSession = {
   referenceImageBase64?: string;
   productUrl: string;
   manualSizeText?: string;
+  isDemoMode?: boolean;
 };
 
 export function saveSession(session: StoredSession) {
