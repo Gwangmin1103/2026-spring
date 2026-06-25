@@ -34,8 +34,32 @@ export async function estimateBodyFromPhotos(input: BodyProfileInput): Promise<B
   const content: Anthropic.Messages.MessageParam["content"] = [
     {
       type: "text",
-      text: `전신 사진과 사용자 정보를 바탕으로 신체 치수를 cm 단위로 추정하세요.
-반드시 JSON만 출력:
+      text: `당신은 신체 치수 측정 전문가입니다. 아래 단계를 순서대로 수행하세요.
+
+[사용자 정보]
+- 키: ${input.heightCm}cm
+- 몸무게: ${input.weightKg}kg
+- 기준 물체: ${input.referenceObjectType ?? "없음"}
+
+[기준 물체 실제 크기]
+- bottle500(500ml 페트병): 높이 200mm, 지름 65mm
+- a4(A4 용지): 210mm × 297mm
+- card(신용카드): 85.6mm × 54mm
+
+[추정 절차 - 반드시 이 순서로 수행]
+STEP 1. 사진에서 기준 물체를 찾아 픽셀 높이를 파악하세요.
+STEP 2. 기준 물체와 사람 신체의 원근감 차이를 판단하세요. 기준 물체가 카메라에 더 가까이 있으면 실제보다 크게 보이므로, 사람 신체와 같은 평면에 있다고 가정했을 때의 보정 비율을 계산하세요.
+STEP 3. 보정된 기준 물체 픽셀 크기와 실제 크기(mm)로 1픽셀 = 몇 mm인지 계산하세요.
+STEP 4. 그 비율로 어깨너비(양쪽 어깨 끝 사이 픽셀 → cm)를 계산하세요.
+STEP 5. 정면 가슴 너비 픽셀을 측정하고, 둘레는 너비 × π × 0.8로 추정하세요.
+STEP 6. 허리 가장 좁은 부분 너비 픽셀을 측정하고 같은 방식으로 둘레를 추정하세요.
+STEP 7. 허벅지 한쪽 너비 픽셀을 측정하고 둘레를 추정하세요.
+STEP 8. 키 ${input.heightCm}cm와 전체 신체 픽셀 높이를 비교해서 비율을 검증하고, 앞선 계산값과 크게 차이나면 보정하세요.
+STEP 9. 어깨에서 손목까지 픽셀로 소매 길이를 추정하세요.
+STEP 10. 어깨에서 옷 밑단까지 총장을 추정하세요. 총장은 키와 절대 혼동하지 마세요. 상의 기준 55~75cm, 아우터 기준 70~110cm.
+STEP 11. 옷이나 포즈로 가려진 부위는 키/몸무게 비율로 보완하세요.
+
+[출력 형식 - JSON만 출력, 다른 텍스트 없음]
 {
   "shoulderWidthCm": number,
   "chestCircumferenceCm": number,
@@ -45,12 +69,8 @@ export async function estimateBodyFromPhotos(input: BodyProfileInput): Promise<B
   "totalLengthCm": number,
   "sleeveLengthCm": number,
   "confidence": "low" | "medium" | "high",
-  "note": "string"
-}
-totalLengthCm: 어깨 끝에서 옷 밑단까지의 길이 (단위: cm). 절대 키와 혼동하지 말 것. 상의 기준 보통 55~75cm, 아우터 기준 70~110cm.
-키: ${input.heightCm}cm
-몸무게: ${input.weightKg}kg
-기준 물체: ${input.referenceObjectType ?? "없음"}`
+  "note": "추정 과정 요약 (2줄 이내)"
+}`
     },
     {
       type: "image",
