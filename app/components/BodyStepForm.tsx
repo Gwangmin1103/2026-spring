@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveNamedProfile } from "@/app/lib/namedProfileStorage";
 import FullBodyPhotoField from "@/app/components/FullBodyPhotoField";
@@ -13,15 +13,6 @@ const OBJECTS: ReferenceObjectSpec[] = [
   { type: "a4", label: "A4 용지", dimensionsMm: "210 x 297mm" },
   { type: "card", label: "신용카드", dimensionsMm: "85.6 x 54mm" }
 ];
-
-function toBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result).split(",")[1] ?? "");
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
 
 export default function BodyStepForm({
   profileName = "",
@@ -38,8 +29,8 @@ export default function BodyStepForm({
   const [gender, setGender] = useState<Gender>(prefillProfile?.gender ?? "male");
   const [fullBodyFile, setFullBodyFile] = useState<File | null>(null);
   const [loadedFullBodyBase64, setLoadedFullBodyBase64] = useState<string | undefined>();
+  const [hasReferenceObject, setHasReferenceObject] = useState(false);
   const [referenceType, setReferenceType] = useState<ReferenceObjectType | undefined>();
-  const [referenceFile, setReferenceFile] = useState<File | null>(null);
   const [productUrl, setProductUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,15 +41,6 @@ export default function BodyStepForm({
     setWeightKg(prefillProfile.weightKg);
     setGender(prefillProfile.gender);
   }, [prefillProfile]);
-
-  const selectedLabel = useMemo(
-    () => OBJECTS.find((x) => x.type === referenceType)?.label ?? "선택 안 함",
-    [referenceType]
-  );
-
-  const onFile = (setter: (file: File | null) => void) => (e: ChangeEvent<HTMLInputElement>) => {
-    setter(e.target.files?.[0] ?? null);
-  };
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -72,23 +54,17 @@ export default function BodyStepForm({
       setError("상품 URL을 입력해주세요.");
       return;
     }
-    if (referenceType && !referenceFile) {
-      setError("기준 물체를 선택했다면 해당 사진도 업로드해주세요.");
-      return;
-    }
 
     try {
       setLoading(true);
       const fullBodyImageBase64 = fullBodyFile
         ? await compressImageToBase64(fullBodyFile)
         : loadedFullBodyBase64!;
-      const referenceImageBase64 = referenceFile ? await toBase64(referenceFile) : undefined;
 
       const session = {
         profile: { heightCm, weightKg, gender },
         fullBodyImageBase64,
-        referenceObjectType: referenceType,
-        referenceImageBase64,
+        referenceObjectType: hasReferenceObject ? referenceType : undefined,
         productUrl: productUrl.trim()
       };
 
@@ -128,29 +104,59 @@ export default function BodyStepForm({
             onLoadedBase64Change={setLoadedFullBodyBase64}
           />
 
+          <p className="text-xs text-slate-500">
+            기준물체(페트병·A4·카드 등)를 손에 들고 찍으면 더 정확하게 측정됩니다.
+          </p>
+
           <div className="space-y-2">
-            <span className="text-sm font-medium">기준 물체 선택 (선택)</span>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-              {OBJECTS.map((item) => (
-                <button
-                  key={item.type}
-                  type="button"
-                  onClick={() => setReferenceType(referenceType === item.type ? undefined : item.type)}
-                  className={`rounded-xl border p-3 text-left text-sm ${
-                    referenceType === item.type ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200"
-                  }`}
-                >
-                  <p className="font-semibold">{item.label}</p>
-                  <p className="text-xs opacity-80">{item.dimensionsMm}</p>
-                </button>
-              ))}
+            <span className="text-sm font-medium">기준물체를 함께 촬영했나요?</span>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setHasReferenceObject(true);
+                }}
+                className={`rounded-xl border px-3 py-2 text-sm font-medium ${
+                  hasReferenceObject ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200"
+                }`}
+              >
+                예
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setHasReferenceObject(false);
+                  setReferenceType(undefined);
+                }}
+                className={`rounded-xl border px-3 py-2 text-sm font-medium ${
+                  !hasReferenceObject ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200"
+                }`}
+              >
+                아니오
+              </button>
             </div>
           </div>
 
-          <label className="block space-y-1 text-sm">
-            <span className="font-medium">기준 물체 사진 업로드 ({selectedLabel})</span>
-            <input type="file" accept="image/*" onChange={onFile(setReferenceFile)} className="w-full text-sm" />
-          </label>
+          {hasReferenceObject ? (
+            <div className="space-y-2">
+              <span className="text-sm font-medium">기준물체 종류</span>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                {OBJECTS.map((item) => (
+                  <button
+                    key={item.type}
+                    type="button"
+                    onClick={() => setReferenceType(referenceType === item.type ? undefined : item.type)}
+                    className={`rounded-xl border p-3 text-left text-sm ${
+                      referenceType === item.type ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200"
+                    }`}
+                  >
+                    <p className="font-semibold">{item.label}</p>
+                    <p className="text-xs opacity-80">{item.dimensionsMm}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
 
           <div className="space-y-2">
             <span className="text-sm font-medium">성별</span>
