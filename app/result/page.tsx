@@ -243,6 +243,7 @@ export default function ResultPage() {
           <SizeComparisonTable
             sizeLabels={getSizeLabels(product)}
             rows={comparisonRows}
+            hemPosition={estimation.hemPosition}
             description={`부위별 핏 판정 · ${detectProductCategory(product) === "top" ? "상의" : "하의"} (모드맨 단면×2 적용)`}
           />
 

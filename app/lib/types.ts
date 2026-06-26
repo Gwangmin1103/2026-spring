@@ -8,6 +8,8 @@ export type ReferenceObjectSpec = {
 
 export type Gender = "male" | "female";
 
+export type HemPosition = "허리 위" | "허리~골반" | "골반" | "엉덩이 중간" | "엉덩이 아래";
+
 export type EstimatedBodyMeasurements = {
   shoulderWidthCm: number;
   chestCircumferenceCm: number;
@@ -31,6 +33,7 @@ export type BodyEstimationResult = {
   estimated: EstimatedBodyMeasurements;
   confidence: "low" | "medium" | "high";
   note: string;
+  hemPosition?: HemPosition;
 };
 
 export type GarmentCategory = "top" | "bottom";

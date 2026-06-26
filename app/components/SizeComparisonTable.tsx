@@ -1,6 +1,7 @@
 import { Fragment } from "react";
 import FitVerdictBadge from "@/app/components/FitVerdictBadge";
 import { FitVerdict } from "@/app/lib/sizeMatch";
+import { HemPosition } from "@/app/lib/types";
 
 export type SizeComparisonCell = {
   garmentCm: number;
@@ -18,6 +19,7 @@ type Props = {
   sizeLabels: string[];
   rows: SizeComparisonRow[];
   description?: string;
+  hemPosition?: HemPosition;
 };
 
 function formatCm(value: number) {
@@ -32,7 +34,8 @@ function formatDifference(value: number) {
 export default function SizeComparisonTable({
   sizeLabels,
   rows,
-  description = "부위별 핏 판정"
+  description = "부위별 핏 판정",
+  hemPosition
 }: Props) {
   return (
     <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -106,7 +109,13 @@ export default function SizeComparisonTable({
                         {formatDifference(cell.differenceCm)}
                       </td>
                       <td className="px-3 py-3.5 text-center">
-                        <FitVerdictBadge verdict={cell.verdict} />
+                        {row.part === "총장" && hemPosition ? (
+                          <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
+                            {hemPosition}
+                          </span>
+                        ) : (
+                          <FitVerdictBadge verdict={cell.verdict} />
+                        )}
                       </td>
                     </Fragment>
                   );
