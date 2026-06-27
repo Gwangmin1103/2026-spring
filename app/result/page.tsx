@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import BodyMeasurementSummaryCard from "@/app/components/BodyMeasurementSummaryCard";
@@ -54,6 +54,7 @@ export default function ResultPage() {
   const [manualSizeText, setManualSizeText] = useState("");
   const [retrying, setRetrying] = useState(false);
   const [heightCm, setHeightCm] = useState<number | undefined>(undefined);
+  const calledRef = useRef(false);
 
   const fetchProduct = useCallback(async (url: string, manual?: string) => {
     const res = await fetch("/api/crawl", {
@@ -69,6 +70,9 @@ export default function ResultPage() {
   }, []);
 
   useEffect(() => {
+    if (calledRef.current) return;
+    calledRef.current = true;
+
     const session = loadSession();
     if (!session) {
       router.replace("/body");
