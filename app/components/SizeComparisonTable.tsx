@@ -3,6 +3,33 @@ import FitVerdictBadge from "@/app/components/FitVerdictBadge";
 import { FitVerdict } from "@/app/lib/sizeMatch";
 import { HemPosition } from "@/app/lib/types";
 
+const HEM_POSITIONS: HemPosition[] = [
+  "허리 위",
+  "허리~골반",
+  "골반",
+  "엉덩이 중간",
+  "엉덩이 아래"
+];
+
+function HemPositionLadder({ selected }: { selected: HemPosition }) {
+  return (
+    <div className="flex flex-col gap-0.5 text-xs leading-tight">
+      {HEM_POSITIONS.map((position) => (
+        <span
+          key={position}
+          className={
+            position === selected
+              ? "rounded bg-yellow-200 px-1 font-bold text-slate-800"
+              : "text-gray-400"
+          }
+        >
+          {position}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export type SizeComparisonCell = {
   garmentCm: number;
   differenceCm: number;
@@ -110,9 +137,7 @@ export default function SizeComparisonTable({
                       </td>
                       <td className="px-3 py-3.5 text-center">
                         {row.part === "총장" && hemPosition ? (
-                          <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
-                            {hemPosition}
-                          </span>
+                          <HemPositionLadder selected={hemPosition} />
                         ) : (
                           <FitVerdictBadge verdict={cell.verdict} />
                         )}
