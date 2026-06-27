@@ -269,11 +269,11 @@ function normalizeSizeRows(rows: ClaudeSizeChartResponse["sizeTable"]): ProductS
 
 function extractJson(text: string): string {
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (fenced?.[1]) return fenced[1].trim();
-  const start = text.indexOf("{");
-  const end = text.lastIndexOf("}");
-  if (start >= 0 && end > start) return text.slice(start, end + 1);
-  return text.trim();
+  const candidate = fenced?.[1] ? fenced[1].trim() : text.trim();
+  const start = candidate.indexOf("{");
+  const end = candidate.lastIndexOf("}");
+  if (start >= 0 && end > start) return candidate.slice(start, end + 1);
+  return candidate;
 }
 
 export async function extractModoodmanProductMeta(
