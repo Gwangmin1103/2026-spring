@@ -6,23 +6,25 @@ import { BodyEstimationResult, ProductInfo } from "@/app/lib/types";
 type AnalyzeRequestBody = {
   bodyEstimation: BodyEstimationResult;
   product: ProductInfo;
+  recommendedSize?: string;
 };
 
 export async function POST(req: NextRequest) {
   try {
-    const { bodyEstimation, product } = (await req.json()) as AnalyzeRequestBody;
+    const { bodyEstimation, product, recommendedSize: requestedSize } = (await req.json()) as AnalyzeRequestBody;
 
     const analyzed = analyzeAllSizes(bodyEstimation.estimated, product);
+    const recommendedSize = requestedSize ?? analyzed.recommendedSize;
     const aiDescription = await createFinalFitComment({
       bodyEstimation,
       product,
       analyses: analyzed.analyses,
-      recommendedSize: analyzed.recommendedSize
+      recommendedSize
     });
 
     return NextResponse.json({
       success: true,
-      data: { ...analyzed, aiComment: aiDescription }
+      data: { ...analyzed, recommendedSize, aiComment: aiDescription }
     });
   } catch (error) {
     return NextResponse.json(

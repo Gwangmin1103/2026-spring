@@ -18,7 +18,7 @@ import {
   formatBodyMeasurementItems,
   formatProfileSubtitle,
   getSizeLabels,
-  recommendSizeFromChart
+  recommendSizeFromComparisonRows
 } from "@/app/lib/resultBuilder";
 import { loadSession, updateSessionManualSizeText } from "@/app/lib/storage";
 import { BodyEstimationResult, ProductInfo } from "@/app/lib/types";
@@ -126,15 +126,16 @@ export default function ResultPage() {
       .finally(() => setLoading(false));
   }, [router, fetchProduct]);
 
-  const recommendedSize = useMemo(
-    () => (estimation && product ? recommendSizeFromChart(estimation.estimated, product, { heightCm }) : null),
-    [estimation, product, heightCm]
-  );
-
   const comparisonRows = useMemo(
     () => (estimation && product ? buildComparisonRows(estimation.estimated, product, { heightCm }) : []),
     [estimation, product, heightCm]
   );
+
+  const recommendedSize = useMemo(() => {
+    if (!product || comparisonRows.length === 0) return null;
+    const labels = getSizeLabels(product);
+    return recommendSizeFromComparisonRows(comparisonRows, labels) ?? labels[0] ?? null;
+  }, [comparisonRows, product]);
 
   const silhouetteData = useMemo(
     () =>
@@ -152,7 +153,7 @@ export default function ResultPage() {
     void fetch("/api/analyze", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ bodyEstimation: estimation, product })
+      body: JSON.stringify({ bodyEstimation: estimation, product, recommendedSize })
     })
       .then((res) => res.json())
       .then((json) => {
@@ -280,11 +281,11 @@ export default function ResultPage() {
             description={`부위별 핏 판정 · ${detectProductCategory(product) === "top" ? "상의" : "하의"} (모드맨 단면×2 적용)`}
           />
 
-          <section className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+          <section className="overflow-visible rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">분석 근거</p>
-            <p className="mt-2 text-sm leading-relaxed text-slate-700">
+            <div className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
               {fitComment ?? "분석 근거를 생성하고 있습니다..."}
-            </p>
+            </div>
           </section>
 
           <section className="rounded-2xl border border-dashed border-slate-200 bg-white px-5 py-4">

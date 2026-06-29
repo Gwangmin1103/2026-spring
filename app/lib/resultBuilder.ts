@@ -10,6 +10,7 @@ import {
 } from "./modoodman";
 import {
   ComparisonVerdict,
+  isHemPosition,
   judgeComparisonVerdict,
   mapEstimatedBodyToBottom,
   mapEstimatedBodyToTop,
@@ -117,6 +118,54 @@ export function buildComparisonRows(
         .filter((entry): entry is [string, { garmentCm: number; differenceCm: number; verdict: ComparisonVerdict }] => entry !== null)
     )
   }));
+}
+
+function scoreComparisonVerdict(verdict: ComparisonVerdict): number {
+  if (isHemPosition(verdict)) return 0;
+  switch (verdict) {
+    case "FIT":
+      return 0;
+    case "REGULAR":
+      return 1;
+    case "LOOSE":
+      return 2;
+    case "TIGHT":
+      return 4;
+    default:
+      return 0;
+  }
+}
+
+/** 사이즈 비교표와 동일한 판정 데이터로 추천 사이즈 산출 */
+export function recommendSizeFromComparisonRows(
+  rows: SizeComparisonRow[],
+  sizeLabels: string[]
+): string | null {
+  if (sizeLabels.length === 0 || rows.length === 0) return null;
+
+  const ranked = sizeLabels.map((sizeLabel) => {
+    let tightCount = 0;
+    let fitCount = 0;
+    let score = 0;
+
+    for (const row of rows) {
+      const cell = row.cells[sizeLabel];
+      if (!cell || isHemPosition(cell.verdict)) continue;
+      if (cell.verdict === "TIGHT") tightCount++;
+      if (cell.verdict === "FIT") fitCount++;
+      score += scoreComparisonVerdict(cell.verdict);
+    }
+
+    return { sizeLabel, tightCount, fitCount, score };
+  });
+
+  ranked.sort((a, b) => {
+    if (a.score !== b.score) return a.score - b.score;
+    if (a.tightCount !== b.tightCount) return a.tightCount - b.tightCount;
+    return b.fitCount - a.fitCount;
+  });
+
+  return ranked[0]?.sizeLabel ?? null;
 }
 
 export function getSizeLabels(product: ProductInfo): string[] {
