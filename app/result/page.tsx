@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import ReactMarkdown from "react-markdown";
 import BodyMeasurementSummaryCard from "@/app/components/BodyMeasurementSummaryCard";
 import BodySilhouetteViewer from "@/app/components/BodySilhouetteViewer";
 import ProductImageGallery from "@/app/components/ProductImageGallery";
@@ -285,8 +286,12 @@ export default function ResultPage() {
 
           <section className="overflow-visible rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">분석 근거</p>
-            <div className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
-              {fitComment ?? "분석 근거를 생성하고 있습니다..."}
+            <div className="mt-2 text-sm leading-relaxed text-slate-700">
+              {fitComment ? (
+                <ReactMarkdown>{fitComment}</ReactMarkdown>
+              ) : (
+                "분석 근거를 생성하고 있습니다..."
+              )}
             </div>
           </section>
 
