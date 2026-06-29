@@ -56,6 +56,7 @@ export default function ResultPage() {
   const [retrying, setRetrying] = useState(false);
   const [heightCm, setHeightCm] = useState<number | undefined>(undefined);
   const [fitComment, setFitComment] = useState<string | null>(null);
+  const [showMeasurementDetail, setShowMeasurementDetail] = useState(false);
   const calledRef = useRef(false);
 
   const fetchProduct = useCallback(async (url: string, manual?: string) => {
@@ -299,6 +300,22 @@ export default function ResultPage() {
                 </div>
               ))}
             </div>
+            {estimation.note ? (
+              <div className="mt-4 border-t border-slate-100 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowMeasurementDetail((prev) => !prev)}
+                  className="text-sm font-medium text-slate-700 hover:text-slate-900"
+                >
+                  측정 상세 보기 {showMeasurementDetail ? "▲" : "▼"}
+                </button>
+                {showMeasurementDetail ? (
+                  <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-600">
+                    {estimation.note}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
           </section>
         </>
       ) : null}
