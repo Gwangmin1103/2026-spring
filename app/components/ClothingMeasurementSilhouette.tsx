@@ -5,9 +5,9 @@ import { PartFit } from "@/app/lib/types";
 
 const fitColors: Record<PartFit["status"], string> = {
   타이트: "#ef4444",
-  "딱 맞음": "#22c55e",
-  여유있음: "#3b82f6",
-  헐렁: "#1d4ed8"
+  "딱 맞음": "#eab308",
+  여유있음: "#22c55e",
+  헐렁: "#94a3b8"
 };
 
 export type GarmentSilhouetteMeasurement = {
@@ -312,13 +312,13 @@ export default function ClothingMeasurementSilhouette({
   const shoulder = category === "top" ? findMeasurement(measurements, "어깨") : null;
 
   return (
-    <div className="rounded-2xl bg-white p-4 shadow-sm">
+    <div className="w-full rounded-2xl bg-white p-4 shadow-sm">
       <h3 className="mb-1 text-base font-semibold">{title}</h3>
       <p className="mb-3 text-xs text-slate-500">
         {category === "top" ? "상의" : "하의"} · 모드맨 단면 실측 (둘레 항목은 ×2 적용)
       </p>
-      <div className="relative mx-auto h-[500px] w-[300px] rounded-xl bg-slate-50">
-        <svg viewBox="0 0 300 500" className="absolute inset-0 h-full w-full">
+      <div className="relative mx-auto h-[540px] w-full max-w-[400px] min-w-[340px] rounded-xl bg-slate-50">
+        <svg viewBox="-50 0 400 540" className="absolute inset-0 h-full w-full overflow-visible">
           <defs>
             {shoulder ? <ArrowMarker id="shoulder-arrow" color={fitColors[shoulder.status]} /> : null}
           </defs>
@@ -339,18 +339,22 @@ export default function ClothingMeasurementSilhouette({
             <BottomOverlays measurements={measurements} />
           )}
 
-          <g transform="translate(10, 460)">
+          <g transform="translate(-10, 470)">
             <rect x="0" y="0" width="12" height="12" fill="#ef4444" rx="2" />
             <text x="16" y="10" fontSize="10" fill="#64748b">
               타이트
             </text>
-            <rect x="60" y="0" width="12" height="12" fill="#22c55e" rx="2" />
-            <text x="76" y="10" fontSize="10" fill="#64748b">
+            <rect x="58" y="0" width="12" height="12" fill="#eab308" rx="2" />
+            <text x="74" y="10" fontSize="10" fill="#64748b">
               딱 맞음
             </text>
-            <rect x="130" y="0" width="12" height="12" fill="#3b82f6" rx="2" />
-            <text x="146" y="10" fontSize="10" fill="#64748b">
+            <rect x="118" y="0" width="12" height="12" fill="#22c55e" rx="2" />
+            <text x="134" y="10" fontSize="10" fill="#64748b">
               여유있음
+            </text>
+            <rect x="178" y="0" width="12" height="12" fill="#94a3b8" rx="2" />
+            <text x="194" y="10" fontSize="10" fill="#64748b">
+              헐렁
             </text>
           </g>
         </svg>

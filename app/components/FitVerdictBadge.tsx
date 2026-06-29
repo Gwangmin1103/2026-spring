@@ -2,9 +2,9 @@ import { FitVerdict } from "@/app/lib/sizeMatch";
 
 const VERDICT_STYLES: Record<FitVerdict, string> = {
   TIGHT: "bg-rose-100 text-rose-700 ring-rose-200",
-  FIT: "bg-emerald-100 text-emerald-700 ring-emerald-200",
-  REGULAR: "bg-blue-100 text-blue-700 ring-blue-200",
-  LOOSE: "bg-violet-100 text-violet-700 ring-violet-200"
+  FIT: "bg-yellow-100 text-yellow-800 ring-yellow-200",
+  REGULAR: "bg-emerald-100 text-emerald-700 ring-emerald-200",
+  LOOSE: "bg-slate-100 text-slate-600 ring-slate-200"
 };
 
 const VERDICT_LABELS: Record<FitVerdict, string> = {

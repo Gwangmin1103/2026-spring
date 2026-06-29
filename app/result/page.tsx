@@ -235,15 +235,19 @@ export default function ResultPage() {
 
       {product && recommendedSize ? (
         <>
-          <section className="grid gap-4 lg:grid-cols-2">
-            <BodySilhouetteViewer
-              category={silhouetteData.category}
-              measurements={silhouetteData.measurements}
-            />
-            <RecommendedSizeHero
-              sizeLabel={recommendedSize}
-              description={`${product.productName} 기준 ${recommendedSize} 사이즈가 가장 균형 잡힙니다. ${estimation.note}`}
-            />
+          <section className="grid gap-4 lg:grid-cols-10">
+            <div className="lg:col-span-7">
+              <BodySilhouetteViewer
+                category={silhouetteData.category}
+                measurements={silhouetteData.measurements}
+              />
+            </div>
+            <div className="flex lg:col-span-3">
+              <RecommendedSizeHero
+                sizeLabel={recommendedSize}
+                description={`${product.productName} 기준 ${recommendedSize} 사이즈가 가장 균형 잡힙니다. ${estimation.note}`}
+              />
+            </div>
           </section>
 
           <SizeComparisonTable
