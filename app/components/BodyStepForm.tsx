@@ -16,10 +16,10 @@ const OBJECTS: ReferenceObjectSpec[] = [
 ];
 
 const BODY_TYPE_OPTIONS: { value: BodyType; label: string; subtitle: string }[] = [
-  { value: "slim", label: "마름", subtitle: "체지방 적고 근육 없는 편 (남 ~12% / 여 ~18%)" },
-  { value: "normal", label: "보통", subtitle: "일반적인 체형 (남 12~20% / 여 18~28%)" },
-  { value: "muscular", label: "근육형", subtitle: "어깨·가슴이 발달한 편" },
-  { value: "chubby", label: "통통", subtitle: "체지방 높은 편 (남 20%+ / 여 28%+)" }
+  { value: "slim", label: "마름", subtitle: "체지방 적거나 근육 없는 편 (남 체지방률 ~12% / 여 ~18%)" },
+  { value: "normal", label: "보통", subtitle: "일반적인 체형 (남 체지방률 12~20% / 여 18~28%)" },
+  { value: "muscular", label: "근육형", subtitle: "어깨·가슴이 발달한 편 (체지방률 무관, 근육량 많은 경우)" },
+  { value: "chubby", label: "통통", subtitle: "체지방 높은 편 (남 체지방률 20%+ / 여 28%+)" }
 ];
 
 export default function BodyStepForm({
