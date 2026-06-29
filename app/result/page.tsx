@@ -7,6 +7,7 @@ import BodyMeasurementSummaryCard from "@/app/components/BodyMeasurementSummaryC
 import BodySilhouetteViewer from "@/app/components/BodySilhouetteViewer";
 import ProductImageGallery from "@/app/components/ProductImageGallery";
 import OutfitShotLinks from "@/app/components/OutfitShotLinks";
+import FitVerdictBadge from "@/app/components/FitVerdictBadge";
 import RecommendedSizeHero from "@/app/components/RecommendedSizeHero";
 import SizeComparisonTable from "@/app/components/SizeComparisonTable";
 import { estimateBodyFromProfile } from "@/app/lib/bodyEstimate";
@@ -23,11 +24,11 @@ import {
 import { loadSession, updateSessionManualSizeText } from "@/app/lib/storage";
 import { BodyEstimationResult, ProductInfo } from "@/app/lib/types";
 
-const LEGEND: { verdict: FitVerdict; label: string; description: string; dotClass: string }[] = [
-  { verdict: "TIGHT", label: "TIGHT", description: "신체 > 옷 (둘레 환산 후)", dotClass: "bg-rose-500" },
-  { verdict: "FIT", label: "FIT", description: "차이 0~3cm", dotClass: "bg-yellow-400" },
-  { verdict: "REGULAR", label: "REGULAR", description: "차이 3~6cm", dotClass: "bg-emerald-500" },
-  { verdict: "LOOSE", label: "루즈", description: "차이 6cm 초과", dotClass: "bg-blue-500" }
+const LEGEND: { verdict: FitVerdict; description: string }[] = [
+  { verdict: "TIGHT", description: "신체 > 옷 (둘레 환산 후)" },
+  { verdict: "FIT", description: "차이 0~3cm" },
+  { verdict: "REGULAR", description: "차이 3~6cm" },
+  { verdict: "LOOSE", description: "차이 6cm 초과" }
 ];
 
 const DEMO_BODY_ESTIMATION: BodyEstimationResult = {
@@ -293,10 +294,7 @@ export default function ResultPage() {
             <div className="flex flex-wrap gap-3">
               {LEGEND.map((item) => (
                 <div key={item.verdict} className="flex items-center gap-2 text-sm text-slate-600">
-                  <span className={`h-3 w-3 shrink-0 rounded-full ${item.dotClass}`} aria-hidden />
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
-                    {item.label}
-                  </span>
+                  <FitVerdictBadge verdict={item.verdict} />
                   <span>{item.description}</span>
                 </div>
               ))}
