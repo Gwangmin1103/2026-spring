@@ -1,6 +1,6 @@
 import { Fragment } from "react";
 import FitVerdictBadge from "@/app/components/FitVerdictBadge";
-import { FitVerdict } from "@/app/lib/sizeMatch";
+import { ComparisonVerdict, FitVerdict, isHemPosition } from "@/app/lib/sizeMatch";
 import { HemPosition } from "@/app/lib/types";
 
 const HEM_POSITIONS: HemPosition[] = [
@@ -33,7 +33,7 @@ function HemPositionLadder({ selected }: { selected: HemPosition }) {
 export type SizeComparisonCell = {
   garmentCm: number;
   differenceCm: number;
-  verdict: FitVerdict;
+  verdict: ComparisonVerdict;
 };
 
 export type SizeComparisonRow = {
@@ -136,10 +136,12 @@ export default function SizeComparisonTable({
                         {formatDifference(cell.differenceCm)}
                       </td>
                       <td className="px-3 py-3.5 text-center">
-                        {row.part === "총장" && hemPosition ? (
-                          <HemPositionLadder selected={hemPosition} />
+                        {row.part === "총장" && (isHemPosition(cell.verdict) || hemPosition) ? (
+                          <HemPositionLadder
+                            selected={isHemPosition(cell.verdict) ? cell.verdict : hemPosition!}
+                          />
                         ) : (
-                          <FitVerdictBadge verdict={cell.verdict} />
+                          <FitVerdictBadge verdict={cell.verdict as FitVerdict} />
                         )}
                       </td>
                     </Fragment>

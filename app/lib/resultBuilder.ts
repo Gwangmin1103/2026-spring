@@ -9,13 +9,14 @@ import {
   mappingHasGarmentData
 } from "./modoodman";
 import {
-  FitVerdict,
-  judgeFitDifference,
+  ComparisonVerdict,
+  judgeComparisonVerdict,
   mapEstimatedBodyToBottom,
   mapEstimatedBodyToTop,
   recommendBestSize,
   compareSizeChart,
-  ParsedGarmentSizeChart
+  ParsedGarmentSizeChart,
+  judgeFitDifference
 } from "./sizeMatch";
 import { EstimatedBodyMeasurements, GarmentCategory, PartFit, ProductInfo, ProductSizeRow } from "./types";
 
@@ -109,11 +110,11 @@ export function buildComparisonRows(
             {
               garmentCm: compared.garmentCompareCm,
               differenceCm: compared.easeCm,
-              verdict: judgeFitDifference(compared.easeCm)
+              verdict: judgeComparisonVerdict(mapping.part, compared.easeCm)
             }
           ] as const;
         })
-        .filter((entry): entry is [string, { garmentCm: number; differenceCm: number; verdict: FitVerdict }] => entry !== null)
+        .filter((entry): entry is [string, { garmentCm: number; differenceCm: number; verdict: ComparisonVerdict }] => entry !== null)
     )
   }));
 }

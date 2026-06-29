@@ -6,7 +6,7 @@ import {
   getModoodmanPartMappings,
   mappingHasGarmentData
 } from "./modoodman";
-import { judgeFitDifference } from "./sizeMatch";
+import { judgeComparisonVerdict } from "./sizeMatch";
 import { StoredProfile } from "./storage";
 import {
   BodyEstimationResult,
@@ -77,11 +77,11 @@ export function buildDemoComparisonRows(
             {
               garmentCm: compared.garmentCompareCm,
               differenceCm: compared.easeCm,
-              verdict: judgeFitDifference(compared.easeCm)
+              verdict: judgeComparisonVerdict(mapping.part, compared.easeCm)
             }
           ] as const;
         })
-        .filter((entry): entry is [string, { garmentCm: number; differenceCm: number; verdict: ReturnType<typeof judgeFitDifference> }] => entry !== null)
+        .filter((entry): entry is [string, { garmentCm: number; differenceCm: number; verdict: ReturnType<typeof judgeComparisonVerdict> }] => entry !== null)
     )
   }));
 }
