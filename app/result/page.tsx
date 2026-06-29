@@ -97,6 +97,8 @@ export default function ResultPage() {
               heightCm: session.profile.heightCm,
               weightKg: session.profile.weightKg,
               gender: session.profile.gender,
+              age: session.profile.age,
+              bodyType: session.profile.bodyType,
               fullBodyImageBase64: session.fullBodyImageBase64,
               referenceObjectType: session.referenceObjectType
             })

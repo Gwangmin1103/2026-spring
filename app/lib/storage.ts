@@ -1,3 +1,4 @@
+import { BodyType } from "./bodyEstimate";
 import { Gender, ReferenceObjectType } from "./types";
 
 const SESSION_KEY = "fit-analyzer-session";
@@ -8,6 +9,8 @@ export type StoredProfile = {
   heightCm: number;
   weightKg: number;
   gender: Gender;
+  age?: number;
+  bodyType?: BodyType;
 };
 
 export type StoredSession = {

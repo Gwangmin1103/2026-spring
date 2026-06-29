@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { saveNamedProfile } from "@/app/lib/namedProfileStorage";
 import FullBodyPhotoField from "@/app/components/FullBodyPhotoField";
 import { compressImageToBase64 } from "@/app/lib/imageCompress";
+import { BodyType } from "@/app/lib/bodyEstimate";
 import { Gender, ReferenceObjectSpec, ReferenceObjectType } from "@/app/lib/types";
 import { saveSession, StoredProfile } from "@/app/lib/storage";
 
@@ -12,6 +13,13 @@ const OBJECTS: ReferenceObjectSpec[] = [
   { type: "bottle500", label: "500ml 페트병", dimensionsMm: "높이 200mm / 지름 65mm" },
   { type: "a4", label: "A4 용지", dimensionsMm: "210 x 297mm" },
   { type: "card", label: "신용카드", dimensionsMm: "85.6 x 54mm" }
+];
+
+const BODY_TYPE_OPTIONS: { value: BodyType; label: string; subtitle: string }[] = [
+  { value: "slim", label: "마름", subtitle: "체지방 적고 근육 없는 편 (남 ~12% / 여 ~18%)" },
+  { value: "normal", label: "보통", subtitle: "일반적인 체형 (남 12~20% / 여 18~28%)" },
+  { value: "muscular", label: "근육형", subtitle: "어깨·가슴이 발달한 편" },
+  { value: "chubby", label: "통통", subtitle: "체지방 높은 편 (남 20%+ / 여 28%+)" }
 ];
 
 export default function BodyStepForm({
@@ -27,6 +35,8 @@ export default function BodyStepForm({
   const [heightCm, setHeightCm] = useState(prefillProfile?.heightCm ?? 175);
   const [weightKg, setWeightKg] = useState(prefillProfile?.weightKg ?? 70);
   const [gender, setGender] = useState<Gender>(prefillProfile?.gender ?? "male");
+  const [age, setAge] = useState<string>(prefillProfile?.age ? String(prefillProfile.age) : "");
+  const [bodyType, setBodyType] = useState<BodyType | undefined>(prefillProfile?.bodyType);
   const [fullBodyFile, setFullBodyFile] = useState<File | null>(null);
   const [loadedFullBodyBase64, setLoadedFullBodyBase64] = useState<string | undefined>();
   const [hasReferenceObject, setHasReferenceObject] = useState(false);
@@ -40,6 +50,8 @@ export default function BodyStepForm({
     setHeightCm(prefillProfile.heightCm);
     setWeightKg(prefillProfile.weightKg);
     setGender(prefillProfile.gender);
+    setAge(prefillProfile.age ? String(prefillProfile.age) : "");
+    setBodyType(prefillProfile.bodyType);
   }, [prefillProfile]);
 
   const onSubmit = async (e: FormEvent) => {
@@ -61,8 +73,17 @@ export default function BodyStepForm({
         ? await compressImageToBase64(fullBodyFile)
         : loadedFullBodyBase64!;
 
+      const parsedAge = age.trim() ? Number(age) : undefined;
+      const profile = {
+        heightCm,
+        weightKg,
+        gender,
+        ...(parsedAge && parsedAge > 0 ? { age: parsedAge } : {}),
+        ...(bodyType ? { bodyType } : {})
+      };
+
       const session = {
-        profile: { heightCm, weightKg, gender },
+        profile,
         fullBodyImageBase64,
         referenceObjectType: hasReferenceObject ? referenceType : undefined,
         productUrl: productUrl.trim()
@@ -78,7 +99,7 @@ export default function BodyStepForm({
         });
       }
 
-      saveNamedProfile(profileName, { heightCm, weightKg, gender, fullBodyImageBase64 });
+      saveNamedProfile(profileName, { ...profile, fullBodyImageBase64 });
       router.push("/result");
     } catch {
       setError("데이터 저장 중 오류가 발생했습니다.");
@@ -201,6 +222,40 @@ export default function BodyStepForm({
                 className="w-full rounded-md border border-slate-300 px-3 py-2"
               />
             </label>
+          </div>
+
+          <label className="space-y-1 text-sm">
+            <span className="font-medium">나이 (선택)</span>
+            <input
+              type="number"
+              value={age}
+              onChange={(e) => setAge(e.target.value)}
+              placeholder="예: 28"
+              min={1}
+              max={120}
+              className="w-full rounded-md border border-slate-300 px-3 py-2"
+            />
+          </label>
+
+          <div className="space-y-2">
+            <span className="text-sm font-medium">체형 (선택)</span>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {BODY_TYPE_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setBodyType(bodyType === option.value ? undefined : option.value)}
+                  className={`rounded-xl border p-3 text-left text-sm ${
+                    bodyType === option.value ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200"
+                  }`}
+                >
+                  <p className="font-semibold">{option.label}</p>
+                  <p className={`mt-0.5 text-xs ${bodyType === option.value ? "opacity-80" : "text-slate-500"}`}>
+                    {option.subtitle}
+                  </p>
+                </button>
+              ))}
+            </div>
           </div>
         </section>
 

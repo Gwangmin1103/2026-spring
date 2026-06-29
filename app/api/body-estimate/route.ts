@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { estimateBodyFromProfile } from "@/app/lib/bodyEstimate";
+import { BodyProfileEstimateInput, BodyType, estimateBodyFromProfile } from "@/app/lib/bodyEstimate";
 import { estimateBodyFromPhotos } from "@/app/lib/claude";
 import { BodyProfileInput, Gender } from "@/app/lib/types";
 
@@ -10,7 +10,7 @@ function parseGender(value: unknown): Gender | null {
 
 export async function POST(req: NextRequest) {
   try {
-    const payload = (await req.json()) as BodyProfileInput;
+    const payload = (await req.json()) as BodyProfileInput & Pick<BodyProfileEstimateInput, "age" | "bodyType">;
     const heightCm = Number(payload.heightCm);
     const weightKg = Number(payload.weightKg);
     const gender = parseGender(payload.gender);
@@ -32,9 +32,18 @@ export async function POST(req: NextRequest) {
       referenceImageBase64: payload.referenceImageBase64
     };
 
+    const age = payload.age !== undefined && payload.age !== null ? Number(payload.age) : undefined;
+    const bodyType =
+      payload.bodyType === "slim" ||
+      payload.bodyType === "normal" ||
+      payload.bodyType === "muscular" ||
+      payload.bodyType === "chubby"
+        ? (payload.bodyType as BodyType)
+        : undefined;
+
     const result = payload.fullBodyImageBase64
       ? await estimateBodyFromPhotos(profileInput)
-      : estimateBodyFromProfile({ heightCm, weightKg, gender });
+      : estimateBodyFromProfile({ heightCm, weightKg, gender, age, bodyType });
 
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
