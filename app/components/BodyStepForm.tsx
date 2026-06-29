@@ -58,10 +58,6 @@ export default function BodyStepForm({
     e.preventDefault();
     setError(null);
 
-    if (!fullBodyFile && !loadedFullBodyBase64) {
-      setError("전신 사진을 업로드해주세요.");
-      return;
-    }
     if (!productUrl.trim()) {
       setError("상품 URL을 입력해주세요.");
       return;
@@ -71,7 +67,7 @@ export default function BodyStepForm({
       setLoading(true);
       const fullBodyImageBase64 = fullBodyFile
         ? await compressImageToBase64(fullBodyFile)
-        : loadedFullBodyBase64!;
+        : loadedFullBodyBase64 ?? "";
 
       const parsedAge = age.trim() ? Number(age) : undefined;
       const profile = {
