@@ -143,7 +143,7 @@ export function estimateBodyFromProfile(input: BodyProfileEstimateInput): BodyEs
   const scale = bodyType ? bodyTypeScale[bodyType] : bodyTypeScale.normal;
   const shoulderAdj = bodyType ? SHOULDER_ADJUSTMENT[bodyType] : SHOULDER_ADJUSTMENT.normal;
 
-  const totalLengthCm = round1(heightCm * (input.gender === 'male' ? 0.398 : 0.392));
+  const totalLengthCm = round1(heightCm * (input.gender === 'male' ? 0.36 : 0.355));
   const genderLabel = input.gender === 'male' ? '남성' : '여성';
   const ageLabel = age ? `${age}세` : '';
   const bodyTypeLabel = bodyType ? ({ slim:'마름', normal:'보통', muscular:'근육형', chubby:'통통' })[bodyType] : '';
