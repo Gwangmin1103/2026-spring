@@ -157,6 +157,9 @@ export function estimateBodyFromProfile(input: BodyProfileEstimateInput): BodyEs
       hipCircumferenceCm: round1(exact.hipCircumferenceCm * scale.hip),
       totalLengthCm,
       sleeveLengthCm: exact.sleeveLengthCm,
+      armholeCircumferenceCm: round1(
+        exact.chestCircumferenceCm * scale.chest * (input.gender === "male" ? 0.42 : 0.4)
+      ),
     },
     confidence: 'medium',
     note: `AI Hub 991명 실측 데이터 기반. ${genderLabel} ${ageLabel} ${bodyTypeLabel} 구간 평균값.`.trim()

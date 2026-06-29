@@ -18,6 +18,7 @@ export type EstimatedBodyMeasurements = {
   hipCircumferenceCm: number;
   totalLengthCm: number;
   sleeveLengthCm: number;
+  armholeCircumferenceCm?: number;
 };
 
 export type BodyProfileInput = {
