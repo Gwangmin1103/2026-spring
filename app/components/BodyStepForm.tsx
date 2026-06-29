@@ -122,6 +122,10 @@ export default function BodyStepForm({
           />
 
           <p className="text-xs text-slate-500">
+            정확한 측정을 위해 민소매나 몸에 맞는 얇은 옷을 입고 찍어주세요.
+          </p>
+
+          <p className="text-xs text-slate-500">
             기준물체(페트병·A4·카드 등)를 손에 들고 찍으면 더 정확하게 측정됩니다.
           </p>
 
