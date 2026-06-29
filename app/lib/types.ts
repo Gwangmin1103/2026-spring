@@ -72,7 +72,7 @@ export type ProductInfo = {
   measurementFields?: string[];
 };
 
-export type FitStatus = "타이트" | "딱 맞음" | "여유있음" | "헐렁";
+export type FitStatus = "타이트" | "딱 맞음" | "여유있음" | "루즈";
 
 export type PartFit = {
   part: "어깨" | "가슴" | "허리" | "허벅지" | "힙" | "총장";

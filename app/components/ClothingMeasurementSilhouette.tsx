@@ -7,7 +7,7 @@ const fitColors: Record<PartFit["status"], string> = {
   타이트: "#ef4444",
   "딱 맞음": "#eab308",
   여유있음: "#22c55e",
-  헐렁: "#94a3b8"
+  루즈: "#3b82f6"
 };
 
 export type GarmentSilhouetteMeasurement = {
@@ -352,9 +352,9 @@ export default function ClothingMeasurementSilhouette({
             <text x="134" y="10" fontSize="10" fill="#64748b">
               여유있음
             </text>
-            <rect x="178" y="0" width="12" height="12" fill="#94a3b8" rx="2" />
+            <rect x="178" y="0" width="12" height="12" fill="#3b82f6" rx="2" />
             <text x="194" y="10" fontSize="10" fill="#64748b">
-              헐렁
+              루즈
             </text>
           </g>
         </svg>

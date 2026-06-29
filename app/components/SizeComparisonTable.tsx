@@ -127,7 +127,7 @@ export default function SizeComparisonTable({
                         ? "text-yellow-600"
                         : cell.differenceCm <= 6
                           ? "text-emerald-600"
-                          : "text-slate-500";
+                          : "text-blue-600";
 
                   return (
                     <Fragment key={`${row.part}-${size}`}>

@@ -195,6 +195,6 @@ export function fitVerdictToStatus(verdict: FitVerdict): PartFit["status"] {
     case "REGULAR":
       return "여유있음";
     case "LOOSE":
-      return "헐렁";
+      return "루즈";
   }
 }

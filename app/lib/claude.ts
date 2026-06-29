@@ -144,19 +144,27 @@ export async function createFinalFitComment({
   analyses,
   recommendedSize
 }: CreateFinalFitCommentParams): Promise<string> {
+  const isProfileFallback = bodyEstimation.confidence === "low";
+  const fallbackComment = isProfileFallback
+    ? `${recommendedSize} 사이즈를 추천합니다. AI Hub 한국인 991명 실측 데이터 기반으로 키·몸무게·체형 구간 평균값을 적용해 추정했습니다. 더 정확한 분석을 원하시면 전신 사진 업로드를 권장드립니다.`
+    : `${recommendedSize} 사이즈를 추천합니다. 어깨와 가슴 중심으로 밸런스가 가장 좋고 총장도 안정적입니다.`;
+
   if (!process.env.ANTHROPIC_API_KEY) {
-    return `${recommendedSize} 사이즈를 추천합니다. 어깨와 가슴 중심으로 밸런스가 가장 좋고 총장도 안정적입니다.`;
+    return fallbackComment;
   }
 
   const anthropic = getAnthropicClient();
   if (!anthropic) {
-    return `${recommendedSize} 사이즈를 추천합니다. 어깨와 가슴 중심으로 밸런스가 가장 좋고 총장도 안정적입니다.`;
+    return fallbackComment;
   }
+
+  const instruction = isProfileFallback
+    ? "추천 사이즈와 그 이유를 2~3문장으로 설명해줘. AI Hub 한국인 991명 실측 데이터 기반으로 키/몸무게/체형 구간 평균값을 적용했다고 언급하고, 정확도를 높이려면 전신사진 업로드를 권장해줘."
+    : "추천 사이즈와 그 이유를 2~3문장으로 설명해줘. 어깨/가슴/소매 등 주요 부위 판정 결과를 근거로 자연스럽게 써줘. 기술적인 측정 방법(픽셀, mm 등)은 언급하지 마.";
 
   const prompt = `
 너는 패션 핏 분석가야.
-다음 정보를 바탕으로 추천 사이즈를 포함한 2~3문장 코멘트를 한국어로 작성해줘.
-문장은 간결하고 구매 결정에 도움이 되어야 해.
+${instruction}
 
 [신체 추정]
 ${JSON.stringify(bodyEstimation, null, 2)}
@@ -184,7 +192,7 @@ ${recommendedSize}
     // fall through to default comment
   }
 
-  return `${recommendedSize} 사이즈를 추천합니다. 어깨와 가슴 중심으로 밸런스가 가장 좋고 총장도 안정적입니다.`;
+  return fallbackComment;
 }
 
 type ClaudeSizeChartResponse = {

@@ -23,11 +23,11 @@ import {
 import { loadSession, updateSessionManualSizeText } from "@/app/lib/storage";
 import { BodyEstimationResult, ProductInfo } from "@/app/lib/types";
 
-const LEGEND: { verdict: FitVerdict; description: string }[] = [
-  { verdict: "TIGHT", description: "신체 > 옷 (둘레 환산 후)" },
-  { verdict: "FIT", description: "차이 0~3cm" },
-  { verdict: "REGULAR", description: "차이 3~6cm" },
-  { verdict: "LOOSE", description: "차이 6cm 초과" }
+const LEGEND: { verdict: FitVerdict; label: string; description: string; dotClass: string }[] = [
+  { verdict: "TIGHT", label: "TIGHT", description: "신체 > 옷 (둘레 환산 후)", dotClass: "bg-rose-500" },
+  { verdict: "FIT", label: "FIT", description: "차이 0~3cm", dotClass: "bg-yellow-400" },
+  { verdict: "REGULAR", label: "REGULAR", description: "차이 3~6cm", dotClass: "bg-emerald-500" },
+  { verdict: "LOOSE", label: "루즈", description: "차이 6cm 초과", dotClass: "bg-blue-500" }
 ];
 
 const DEMO_BODY_ESTIMATION: BodyEstimationResult = {
@@ -54,6 +54,7 @@ export default function ResultPage() {
   const [manualSizeText, setManualSizeText] = useState("");
   const [retrying, setRetrying] = useState(false);
   const [heightCm, setHeightCm] = useState<number | undefined>(undefined);
+  const [fitComment, setFitComment] = useState<string | null>(null);
   const calledRef = useRef(false);
 
   const fetchProduct = useCallback(async (url: string, manual?: string) => {
@@ -142,6 +143,31 @@ export default function ResultPage() {
         : { category: "top" as const, measurements: [] },
     [estimation, product, recommendedSize, heightCm]
   );
+
+  useEffect(() => {
+    if (!estimation || !product || !recommendedSize) return;
+
+    let cancelled = false;
+
+    void fetch("/api/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bodyEstimation: estimation, product })
+    })
+      .then((res) => res.json())
+      .then((json) => {
+        if (!cancelled && json.success && json.data?.aiComment) {
+          setFitComment(json.data.aiComment as string);
+        }
+      })
+      .catch(() => {
+        // keep fitComment null on failure
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [estimation, product, recommendedSize]);
 
   const productImageUrls = useMemo(() => {
     if (!product) return [];
@@ -243,10 +269,7 @@ export default function ResultPage() {
               />
             </div>
             <div className="flex lg:col-span-3">
-              <RecommendedSizeHero
-                sizeLabel={recommendedSize}
-                description={`${product.productName} 기준 ${recommendedSize} 사이즈가 가장 균형 잡힙니다. ${estimation.note}`}
-              />
+              <RecommendedSizeHero productName={product.productName} sizeLabel={recommendedSize} />
             </div>
           </section>
 
@@ -257,13 +280,21 @@ export default function ResultPage() {
             description={`부위별 핏 판정 · ${detectProductCategory(product) === "top" ? "상의" : "하의"} (모드맨 단면×2 적용)`}
           />
 
+          <section className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">분석 근거</p>
+            <p className="mt-2 text-sm leading-relaxed text-slate-700">
+              {fitComment ?? "분석 근거를 생성하고 있습니다..."}
+            </p>
+          </section>
+
           <section className="rounded-2xl border border-dashed border-slate-200 bg-white px-5 py-4">
             <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">판정 기준</p>
             <div className="flex flex-wrap gap-3">
               {LEGEND.map((item) => (
                 <div key={item.verdict} className="flex items-center gap-2 text-sm text-slate-600">
+                  <span className={`h-3 w-3 shrink-0 rounded-full ${item.dotClass}`} aria-hidden />
                   <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
-                    {item.verdict}
+                    {item.label}
                   </span>
                   <span>{item.description}</span>
                 </div>
