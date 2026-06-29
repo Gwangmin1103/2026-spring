@@ -56,7 +56,7 @@ export default function FullBodyPhotoField({
     <div className="space-y-3">
       <label className="block space-y-1 text-sm">
         <span className="font-medium">
-          전신 사진 업로드 <span className="text-rose-500">*</span>
+          전신 사진 업로드 (선택)
         </span>
         <input
           type="file"
