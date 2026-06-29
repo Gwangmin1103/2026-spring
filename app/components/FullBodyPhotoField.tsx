@@ -61,7 +61,6 @@ export default function FullBodyPhotoField({
         <input
           type="file"
           accept="image/*"
-          required={!previewUrl}
           onChange={handleChange}
           className="w-full text-sm"
         />
